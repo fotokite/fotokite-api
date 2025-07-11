@@ -1,0 +1,27 @@
+[project]
+name = "fotokite-api-demo"
+version = "0.1.0"
+description = "Simple examples to showcase how you can interact with the Fotokite API"
+authors = [
+    {name = "Fotokite", email = "sw@fotokite.com"}
+]
+readme = "README.md"
+
+[tool.poetry]
+package-mode = false
+
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "^2.32.4"
+websockets = "^15.0.1"
+asyncio = "^3.4.3"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.6.4"
+mypy = "^1.11.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
