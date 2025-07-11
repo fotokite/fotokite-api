@@ -1,0 +1,1982 @@
+openapi: 3.0.4
+info:
+  title: Fotokite API
+  description: Allows access to all Fotokite Sigma functionality from a single entry
+    point.
+  version: 0.0.1
+servers:
+- url: http://192.168.2.100:3128/api
+  description: API service running on the system
+paths:
+  /v0/health:
+    get:
+      tags:
+      - Health
+      summary: Health Check
+      description: Returns the health status of the API
+      responses:
+        200:
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: string
+                example: OK
+        500:
+          description: API is unhealthy
+          content:
+            application/json:
+              schema:
+                type: string
+                example: Service Unavailable
+  /v0/info/system:
+    get:
+      tags:
+      - System
+      summary: System Information
+      description: Returns information about the system and its components
+      responses:
+        200:
+          $ref: '#/components/responses/Get200SystemResponse'
+  /v0/telemetry/system:
+    get:
+      tags:
+      - System
+      summary: Get system dynamic information.
+      description: 'System dynamic (frequently changing) information contains the
+        data that does not change as often as flight information and also may not
+        be so interesting.
+
+        '
+      responses:
+        200:
+          description: Success execution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemDynamicInfo'
+  /v0/info/camera:
+    get:
+      tags:
+      - Camera
+      summary: Get camera information
+      description: Returns information about camera.
+      responses:
+        200:
+          description: Camera information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CameraInfo'
+        404:
+          $ref: '#/components/responses/CameraNotFound'
+  /v0/commands/camera/rotate_by_angle:
+    post:
+      tags:
+      - Camera
+      summary: Pan the Kite and tilt the camera by angle
+      description: 'Pans the Kite and tilts the camera by the angles specified. It
+        changes the Kite heading. This command uses camera motors to tilt the camera.
+        This command is useful when camera doesn''t support panning.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RotateCameraByAngle'
+      responses:
+        202:
+          $ref: '#/components/responses/CommandSuccess'
+        400:
+          $ref: '#/components/responses/WrongInput'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        404:
+          $ref: '#/components/responses/CameraNotFound'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+        503:
+          $ref: '#/components/responses/ServiceUnavailable'
+  /v0/commands/camera/rotate_to_angle:
+    post:
+      tags:
+      - Camera
+      summary: Pan the Kite and tilt the camera to angle
+      description: 'Pans the Kite and tilts the camera to the angles specified. It
+        changes the Kite heading. This command uses camera motors to tilt the camera.
+        This command is useful when camera doesn''t support panning.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              $ref: '#/components/schemas/RotateCameraToAngle'
+      responses:
+        202:
+          $ref: '#/components/responses/CommandSuccess'
+        400:
+          $ref: '#/components/responses/WrongInput'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        404:
+          $ref: '#/components/responses/CameraNotFound'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+        503:
+          $ref: '#/components/responses/ServiceUnavailable'
+  /v0/info/videostreams:
+    get:
+      tags:
+      - Camera
+      summary: Get video streams settings
+      description: Returns video streams settings.
+      responses:
+        200:
+          description: Video streams settings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VideoStreamSettings'
+              example:
+              - id: Zoom
+                protocol: RTP
+                frame_width: 1920
+                frame_height: 1080
+                codec: H264
+                url: rtsp://192.168.2.100:5010/video
+              - id: Wide
+                protocol: RTP
+                frame_width: 1920
+                frame_height: 1080
+                codec: H264
+                url: rtsp://192.168.2.100:5014/video
+              - id: Thermal
+                protocol: RTP
+                frame_width: 320
+                frame_height: 240
+                codec: H264
+                url: rtsp://192.168.2.100:5012/video
+  /v0/telemetry/videostreams:
+    get:
+      tags:
+      - Camera
+      summary: Get dynamic information about video streams
+      description: Returns dynamic (frequently changing) information about video streams.
+      responses:
+        200:
+          description: Video streams dynamic information
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VideoStreamDynamicInfo'
+                example:
+                - id: Zoom
+                  is_streaming: true
+                  timestamp: 123456789
+                  hfov: 47.785
+                  vfov: 31.8
+                  zoom_level: 2.0
+                  camera_pan: 10.0
+                  camera_tilt: 32.0
+                  camera_roll: 0.0
+                - id: Wide
+                  is_streaming: true
+                  timestamp: 583096709
+                  hfov: 95.57
+                  vfov: 63.6
+                  zoom_level: 1.0
+                  camera_pan: 10.0
+                  camera_tilt: 32.0
+                  camera_roll: 0.0
+                - id: Thermal
+                  is_streaming: true
+                  timestamp: 2338114
+                  hfov: 23.83
+                  vfov: 17.984
+                  zoom_level: 1.0
+                  camera_pan: 10.0
+                  camera_tilt: 32.0
+                  camera_roll: 0.0
+                  thermal_color_palette: Ironbow
+  /v0/telemetry/videostreams/{stream_name}:
+    get:
+      tags:
+      - Camera
+      summary: Get dynamic information about video stream
+      description: Returns dynamic (frequently changing) information about requested
+        video stream.
+      parameters:
+      - in: path
+        name: stream_name
+        description: Unique stream identifier.
+        required: true
+        schema:
+          type: string
+          example: Zoom
+      responses:
+        200:
+          description: Video streams dynamic information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoStreamDynamicInfo'
+        404:
+          $ref: '#/components/responses/VideostreamOrCameraNotFound'
+  /v0/commands/videostreams/{stream_name}/zoom:
+    post:
+      tags:
+      - Camera
+      summary: Change zoom level of the video stream
+      description: Changes zoom level of the requested video stream.
+      parameters:
+      - in: path
+        name: stream_name
+        description: Unique stream identifier.
+        required: true
+        schema:
+          type: string
+          example: Zoom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                zoom_level:
+                  description: New zoom level to set. Must be in the range from `zoom_min`
+                    to `zoom_max`.
+                  type: number
+                  example: 2.0
+      responses:
+        202:
+          $ref: '#/components/responses/CommandSuccess'
+        400:
+          $ref: '#/components/responses/WrongInput'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        404:
+          $ref: '#/components/responses/VideostreamOrCameraNotFound'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+  /v0/commands/videostreams/{stream_name}/palette:
+    post:
+      tags:
+      - Camera
+      summary: Set thermal color palette of the video stream
+      description: Sets thermal color palette of the requested video stream.
+      parameters:
+      - in: path
+        name: stream_name
+        description: Unique stream identifier.
+        required: true
+        schema:
+          type: string
+          example: Thermal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                thermal_color_palette:
+                  description: New thermal color palette to set.
+                  $ref: '#/components/schemas/ThermalColorPalette'
+      responses:
+        202:
+          $ref: '#/components/responses/CommandSuccess'
+        400:
+          $ref: '#/components/responses/WrongInput'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        404:
+          $ref: '#/components/responses/VideostreamOrCameraNotFound'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+  /v0/commands/videostreams/{stream_name}/snapshot:
+    get:
+      tags:
+      - Camera
+      summary: Get snapshot from video stream
+      description: Returns a snapshot from the requested video stream.
+      parameters:
+      - in: path
+        name: stream_name
+        description: Unique stream identifier.
+        required: true
+        schema:
+          type: string
+          example: Zoom
+      responses:
+        200:
+          description: Snapshot image
+          content:
+            multipart/mixed:
+              schema:
+                type: object
+                properties:
+                  image/png:
+                    type: string
+                    format: binary
+                  metadata:
+                    type: object
+                    required:
+                    - timestamp
+                    properties:
+                      timestamp:
+                        type: number
+                        description: 'Timestamp of the video frame. For RTP video
+                          streams this is the RTP timestamp.
+
+                          '
+                        example: 95732095
+        404:
+          $ref: '#/components/responses/VideostreamOrCameraNotFound'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+  /v0/info/notifications/dictionary:
+    get:
+      tags:
+      - Notifications
+      summary: Get Notifications Dictionary
+      description: 'Request the notifications dictionary. The dictionary contains
+        all possible notifications that can be sent by the System. It is recommended
+        to use this endpoint to get the list of all possible notifications and their
+        texts to display them to the user.
+
+        '
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Notifications dictionary
+                items:
+                  $ref: '#/components/schemas/NotificationDictionaryItem'
+  /v0/telemetry/notifications:
+    get:
+      tags:
+      - Notifications
+      summary: Get system notifications
+      description: 'Request System notifications. Notification is a temporary or permanent
+        event that reflects current System state. This may be an error state or a
+        notification. If request body is missed then returns all currently active
+        notifications. Every response contains `to_time` time point. Up to this point
+        notifications are fetched. This means that a notification gets into the response
+        if its `end_time` is not set or greater or equal to `to_time`. It is recommended
+        to use this point for the next request to not miss any notification and to
+        not request the same notifications multiple times.
+
+        '
+      parameters:
+      - name: from_time
+        in: query
+        description: 'The time from which notifications will be sent (including the
+          time point itself). In RFC3339 (section 5.6) format. If the property is
+          missed then only currently active notifications are returned.
+
+          '
+        schema:
+          type: string
+          format: date-time
+          example: 2025-05-05 13:10:00+00:00
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationsObject'
+  /v0/info/flight/hard_limits:
+    get:
+      tags:
+      - Flight
+      summary: Get Flight hard limits.
+      description: 'Get Flight hard limits. Hard limits contain those properties that
+        either do not change (ex. physical limitations) or change rarely (ex. legal
+        restrictions).
+
+        '
+      responses:
+        200:
+          description: Success execution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlightHardLimits'
+  /v0/info/flight/takeoff_altitude:
+    get:
+      tags:
+      - Flight
+      summary: Request the Kite takeoff altitude.
+      description: 'The takeoff altitude is the altitude to which the Kite rises after
+        takeoff. It is important for setups where the Kite is embedded into a vehicle.
+        Important: Kite cannot fly lower than takeoff altitude.
+
+        '
+      responses:
+        200:
+          description: Request finished successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TakeoffAltitude'
+  /v0/telemetry/flight:
+    get:
+      tags:
+      - Flight
+      summary: Get flight dynamic information.
+      description: 'Get flight dynamic (frequently changing) information.
+
+        '
+      responses:
+        200:
+          description: Success execution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlightDynamicInfo'
+  /v0/telemetry/flight/soft_limits:
+    get:
+      tags:
+      - Flight
+      summary: Request the Kite flight soft limits
+      responses:
+        200:
+          description: Request finished successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlightSoftLimits'
+  /v0/commands/flight/take_off:
+    post:
+      tags:
+      - Flight
+      summary: Send command to take off the Kite
+      responses:
+        200:
+          $ref: '#/components/responses/CommandSuccess'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+  /v0/commands/flight/land:
+    post:
+      tags:
+      - Flight
+      summary: Send command to land the Kite
+      responses:
+        200:
+          $ref: '#/components/responses/CommandSuccess'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+  /v0/commands/flight/abort:
+    post:
+      tags:
+      - Flight
+      summary: Send command to abort taking off or landing
+      responses:
+        200:
+          $ref: '#/components/responses/CommandSuccess'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+  /v0/commands/flight/set_altitude:
+    post:
+      tags:
+      - Flight
+      summary: Set Kite target altitude
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Set Kite target altitude data
+              properties:
+                altitude:
+                  description: 'Target Kite altitude above the Ground Station (meters).
+                    Must not be lower than Kite takeoff altitude + 1 meter. But lower
+                    than both `altitude_hard_limit` and `altitude_soft_limit`. Note:
+                    there is always a margin of error between the `altitude_target`
+                    and the altitude the Kite will take. And this error is not a constant.
+
+                    '
+                  type: number
+      responses:
+        200:
+          $ref: '#/components/responses/CommandSuccess'
+        400:
+          $ref: '#/components/responses/WrongInput'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+        503:
+          $ref: '#/components/responses/ServiceUnavailable'
+  /v0/commands/flight/rotate_by_angle:
+    post:
+      tags:
+      - Flight
+      summary: Rotate the Kite by the angle specified (change its heading)
+      description: 'Rotate the Kite by the angle specified (change its heading) for
+        the time specified. To immediately stop Kite rotation send `rotate_kite_with_speed`
+        command with 0 speed. Note: there is always a margin of error in rotation
+        speed and total rotation angle can not be equal to `speed * duration`.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RotateKiteByAngleCommand'
+      responses:
+        200:
+          $ref: '#/components/responses/CommandSuccess'
+        400:
+          $ref: '#/components/responses/WrongInput'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+  /v0/commands/flight/rotate_with_speed:
+    post:
+      tags:
+      - Flight
+      summary: Rotate the Kite with the angle speed specified (change its heading)
+      description: 'Rotate the Kite with the angle speed specified (change its heading).
+        To immediately stop Kite rotation send the same command with 0 speed.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RotateKiteWithSpeedCommand'
+      responses:
+        200:
+          $ref: '#/components/responses/CommandSuccess'
+        400:
+          $ref: '#/components/responses/WrongInput'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+  /v0/commands/flight/rotate_to_angle:
+    post:
+      tags:
+      - Flight
+      summary: Rotate the Kite (set Kite heading) to the heading specified.
+      description: 'Rotate the Kite (set Kite heading) to the heading specified. To
+        immediately stop Kite rotation send `rotate_kite_with_speed` command with
+        0 speed.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RotateKiteToHeadingCommand'
+      responses:
+        200:
+          $ref: '#/components/responses/CommandSuccess'
+        400:
+          $ref: '#/components/responses/WrongInput'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+        503:
+          $ref: '#/components/responses/ServiceUnavailable'
+  /v0/commands/flight/set_soft_limits:
+    put:
+      tags:
+      - Flight
+      summary: Set the Kite flight soft limits.
+      description: 'Update the Kite''s flight soft limits. If the Kite is airborne
+        at an altitude above the new soft limit, it will automatically descend to
+        comply with the new limit. Note: this value resets on system reboot.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlightSoftLimits'
+      responses:
+        200:
+          $ref: '#/components/responses/CommandSuccess'
+        400:
+          $ref: '#/components/responses/WrongInput'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        503:
+          $ref: '#/components/responses/ServiceUnavailable'
+  /v0/media/recordings:
+    get:
+      summary: Lists existing video recordings
+      description: A recording is a collection of video files (color and thermal)
+        and metadata files. One recording might contain multiple video files.
+      tags:
+      - Media
+      responses:
+        200:
+          description: List of video recordings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recording'
+  /v0/media/recordings/{recording}:
+    parameters:
+    - name: recording
+      in: path
+      required: true
+      description: Directory of the video recording
+      schema:
+        type: string
+      example: 20220616_132946_+0200
+    get:
+      summary: Get video recording details
+      description: Returns details of a specific video recording, including video
+        files and metadata.
+      tags:
+      - Media
+      responses:
+        200:
+          description: Details of the video recording
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recording'
+        404:
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Delete video recordings
+      description: Deletes both IR and Color videos from the specified recording directory.
+        Does not delete metadata files.
+      tags:
+      - Media
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/BadRequest'
+  /v0/media/recordings/{recording}/{file}:
+    parameters:
+    - name: recording
+      in: path
+      required: true
+      description: Directory of the video recording, URL-encoded.
+      schema:
+        type: string
+      example: 20220616_132946_+0200
+    - name: file
+      in: path
+      required: true
+      description: Video file to download, URL-encoded.
+      schema:
+        type: string
+      example: color.mp4
+    - name: Range
+      in: header
+      required: false
+      description: Specifies byte range for partial downloads, enabling efficient
+        buffering or browser playback.
+      schema:
+        type: string
+        pattern: ^bytes=((\d+-\d*,?)+|-\d+)$
+    get:
+      summary: Download video
+      tags:
+      - Media
+      responses:
+        200:
+          description: Full file content
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        206:
+          description: Partial file content
+          headers:
+            Accept-Ranges:
+              description: The range unit supported by the server.
+              schema:
+                type: string
+            Content-Length:
+              description: Length of the response body in bytes.
+              schema:
+                type: integer
+                format: int64
+            Content-Range:
+              description: Content byte range in the response.
+              schema:
+                type: string
+                pattern: ^bytes \d+-\d+/\d+$
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        400:
+          $ref: '#/components/responses/BadRequest'
+        404:
+          $ref: '#/components/responses/NotFound'
+        416:
+          $ref: '#/components/responses/RangeNotSatisfiable'
+  /v0/media/recorder/status:
+    get:
+      summary: Recorder status
+      description: Returns the current status of the video recorder.
+      tags:
+      - Media
+      responses:
+        200:
+          description: Current recorder status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecorderStatus'
+  /v0/media/diskstats:
+    get:
+      summary: SSD disk stats
+      tags:
+      - Media
+      responses:
+        200:
+          description: SSD disk usage statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiskStats'
+  /v0/commands/recorder/start:
+    post:
+      summary: Start recording
+      tags:
+      - Media
+      responses:
+        200:
+          description: Recorder status after starting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecorderStatus'
+        400:
+          description: Bad request
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        507:
+          $ref: '#/components/responses/InsufficientStorage'
+  /v0/commands/recorder/stop:
+    post:
+      summary: Stop recording
+      tags:
+      - Media
+      responses:
+        200:
+          description: Recorder status after stopping
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecorderStatus'
+        400:
+          description: Bad request
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        507:
+          $ref: '#/components/responses/InsufficientStorage'
+  /v0/{category}/{endpoint}/subscribe:
+    post:
+      tags:
+      - Subscription
+      summary: Subscribe for updates
+      parameters:
+      - in: path
+        name: category
+        description: Category of the endpoint to to subscribe to
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: endpoint
+        description: Which endpoint to subscribe to
+        required: true
+        schema:
+          type: string
+      - in: cookie
+        name: connection
+        description: Which connection to use
+        required: true
+        schema:
+          type: string
+        example: websocket:2373d2d1-d22d-4b5a-8fef-67bffdd85aef
+      responses:
+        201:
+          description: Subscribed
+        400:
+          description: No such connection
+        404:
+          description: Endpoint does not exist
+        405:
+          description: Endpoint does not support subscription
+    get:
+      tags:
+      - Subscription
+      summary: Connect to web socket
+      description: This endpoint will allow a connection upgrade to a websocket
+      parameters:
+      - in: path
+        name: category
+        description: Category of the endpoint to to subscribe to
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: endpoint
+        description: Which endpoint to subscribe to
+        required: true
+        schema:
+          type: string
+      responses:
+        101:
+          description: Websocket connection established.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: connection=websocket:2373d2d1-d22d-4b5a-8fef-67bffdd85aef;
+                  Path=/;
+        404:
+          description: Endpoint does not exist
+        405:
+          description: Endpoint does not support subscription
+  /v0/{category}/{endpoint}/unsubscribe:
+    post:
+      tags:
+      - Subscription
+      summary: Subscribe for updates
+      parameters:
+      - in: path
+        name: category
+        description: Category of the endpoint to to subscribe to
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: endpoint
+        description: Which endpoint to subscribe to
+        required: true
+        schema:
+          type: string
+      - in: cookie
+        name: connection
+        description: Which connection to use
+        required: true
+        schema:
+          type: string
+        example: websocket:2373d2d1-d22d-4b5a-8fef-67bffdd85aef
+      responses:
+        202:
+          description: Unsubscribed
+        404:
+          description: No such subscription
+  /v0/{category}/{endpoint}/{operation}/subscribe:
+    post:
+      tags:
+      - Subscription
+      summary: Subscribe for updates
+      parameters:
+      - in: path
+        name: category
+        description: Category of the endpoint to to subscribe to
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: endpoint
+        description: Which endpoint to subscribe to
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: operation
+        description: Which operation to subscribe to
+        required: true
+        schema:
+          type: string
+      - in: cookie
+        name: connection
+        description: Which connection to use
+        required: true
+        schema:
+          type: string
+        example: websocket:2373d2d1-d22d-4b5a-8fef-67bffdd85aef
+      responses:
+        201:
+          description: Subscribed
+        400:
+          description: No such connection
+        404:
+          description: Endpoint does not exist
+        405:
+          description: Endpoint does not support subscription
+    get:
+      tags:
+      - Subscription
+      summary: Connect to web socket
+      description: This endpoint will allow a connection upgrade to a websocket
+      parameters:
+      - in: path
+        name: category
+        description: Category of the endpoint to to subscribe to
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: endpoint
+        description: Which endpoint to subscribe to
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: operation
+        description: Which operation to subscribe to
+        required: true
+        schema:
+          type: string
+      responses:
+        101:
+          description: Websocket connection established.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: connection=websocket:2373d2d1-d22d-4b5a-8fef-67bffdd85aef;
+                  Path=/;
+        404:
+          description: Endpoint does not exist
+        405:
+          description: Endpoint does not support subscription
+  /v0/{category}/{endpoint}/{operation}/unsubscribe:
+    post:
+      tags:
+      - Subscription
+      summary: Subscribe for updates
+      parameters:
+      - in: path
+        name: category
+        description: Category of the endpoint to to subscribe to
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: endpoint
+        description: Which endpoint to subscribe to
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: operation
+        description: Which operation to subscribe to
+        required: true
+        schema:
+          type: string
+      - in: cookie
+        name: connection
+        description: Which connection to use
+        required: true
+        schema:
+          type: string
+        example: websocket:2373d2d1-d22d-4b5a-8fef-67bffdd85aef
+      responses:
+        202:
+          description: Unsubscribed
+        404:
+          description: No such subscription
+components:
+  responses:
+    BadRequest:
+      description: Bad request. This can be a completely malformed request (e.g. request
+        body not JSON) or specific parameter values that are outside the acceptable
+        limits.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: File Not Found. Endpoint does not exist at all or the object referred
+        to is not known.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RangeNotSatisfiable:
+      description: Requested Range Not Satisfiable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Internal error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InsufficientStorage:
+      description: Insufficient Storage
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    CommandSuccess:
+      description: The command was sent successfully
+    WrongInput:
+      description: Request parameter doesn't meet criteria
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServiceUnavailable:
+      description: 'The service is not ready yet. Usually this means that service
+        didn''t gather all the necessary information from subsystems.
+
+        '
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    VideostreamOrCameraNotFound:
+      description: 'The operation requires a camera payload, but either a different
+        type of payload is currently installed, or the requested video stream does
+        not exist for the installed camera.
+
+        '
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    CameraNotFound:
+      description: 'The operation requires a camera payload, but a different type
+        of payload is currently installed. Please install a compatible camera payload
+        to proceed.
+
+        '
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotAllowedInCurrentState:
+      description: 'The operation is not allowed in current state. Example: Rotation
+        is not allowed during landing.'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ControlCommandBlocked:
+      description: Control is not allowed because somebody else is controlling the
+        System.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Get200SystemResponse:
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/System'
+  schemas:
+    Error:
+      type: object
+      description: A generic error object.
+      required:
+      - code
+      - message
+      properties:
+        code:
+          description: Unique error code.
+          type: string
+          example: SOMETHING_WENT_WRONG
+        message:
+          description: User readable message of the error
+          type: string
+          example: Something went wrong, please try again later.
+    OnlineState:
+      type: string
+      description: "Online state of the payload.\n  * `Online` - payload is on and\
+        \ available to the system.\n  * `Offline` - payload is not available for some\
+        \ reason.\n"
+      enum:
+      - Online
+      - Offline
+    System:
+      type: object
+      description: Represents the system information
+      required:
+      - gs_name
+      - gs_mac
+      - kite_name
+      - rtb_name
+      - installation
+      - model
+      - timezone
+      - timezone_name_short
+      - timezone_offset
+      - boards
+      properties:
+        gs_name:
+          description: The identity of the ground station
+          type: string
+          example: G001ZH
+        gs_mac:
+          description: The MAC address of the router WAN port
+          type: string
+          example: 00:11:22:33:44:55
+        kite_name:
+          description: The name of the kite. (Sticker on the kite)
+          type: string
+          example: K2020MF
+        rtb_name:
+          description: The name of the RTB (Roof Top Box)
+          type: string
+          example: R001ND
+        installation:
+          description: The type of installation. (RTB, DevKit, Transport Case, Tray
+            Mount)
+          type: string
+          example: RTB
+        model:
+          description: The model/generation of the system. (e.g. "Sigma", "Gamma")
+          type: string
+          example: Sigma
+        timezone:
+          description: The timezone of the system.
+          type: string
+          example: Europe/Zurich
+        timezone_name_short:
+          description: The short name of the timezone.
+          type: string
+          example: CEST
+        timezone_offset:
+          description: The offset of the timezone.
+          type: string
+          example: +02:00
+        boards:
+          type: array
+          description: List of system boards
+          items:
+            $ref: '#/components/schemas/SystemBoard'
+    SystemBoard:
+      type: object
+      description: Represents a system board
+      required:
+      - board
+      - id
+      properties:
+        board:
+          type: string
+          description: Available system board names
+          example: GMC
+        id:
+          description: 'The unique identifier of the board. (e.g. "001111211136511134311FFF")
+
+            '
+          type: string
+          example: 001111211136511134311FFF
+    SystemDynamicInfo:
+      type: object
+      description: 'System dynamic information. System dynamic information contains
+        the data that does not change as often as flight information and also may
+        not be so interesting. A property is not presented if it could not be gathered
+        (due to a hardware issue for example)
+
+        '
+      properties:
+        kite_battery_level:
+          description: Kite backup battery charge level in percents [0..+100]
+          type: number
+          minimum: 0
+          maximum: 100
+        gs_battery_level:
+          description: Ground Station backup battery charge level in percents [0..+100]
+          type: number
+          minimum: 0
+          maximum: 100
+        gs_input_voltage:
+          description: Ground Station input voltage (volts)
+          type: number
+        rtb_lids_state:
+          $ref: '#/components/schemas/RTBLidsState'
+        gs_gps_lat:
+          description: Latitude reported by Ground Station GPS [-90..+90] (degrees)
+          type: number
+          minimum: -90
+          exclusiveMinimum: true
+          maximum: 90
+        gs_gps_lon:
+          description: Longitude reported by Ground Station GPS (-180..+180] (degrees)
+          type: number
+          minimum: -180
+          exclusiveMinimum: true
+          maximum: 180
+        gs_gps_elevation:
+          description: Elevation reported by Ground Station GPS (meters)
+          type: number
+        gs_gps_accuracy:
+          description: Ground Station GPS accuracy in meters
+          type: number
+          minimum: 0
+      example:
+        kite_battery_level: 100
+        gs_battery_level: 98
+        gs_input_voltage: 112
+        rtb_lids_state: Opened
+        gs_gps_lat: 47.3883959
+        gs_gps_lon: 8.5229581
+        gs_gps_elevation: 403
+        gs_gps_accuracy: 0.31
+    RTBLidsState:
+      type: string
+      description: "Rooftop box lids state. Presented only when GS has lids.\n  *\
+        \ `Closed` - Lids are closed\n  * `Opening` - Lids are opening\n  * `Opened`\
+        \ - Lids are opened\n  * `Closing` - Lids are closing\n"
+      enum:
+      - Closed
+      - Opening
+      - Opened
+      - Closing
+    CameraInfo:
+      type: object
+      description: Camera information
+      required:
+      - online_state
+      properties:
+        online_state:
+          description: 'If Online then the camera is powered on and can be used. This
+            also means that the data about camera is up-to-date. If Offline then the
+            camera is powered off or not connected to the system. In this case the
+            data about the last online camera is provided. And this information may
+            be inaccurate due to payload swap.
+
+            '
+          $ref: '#/components/schemas/OnlineState'
+          example: Online
+        model:
+          description: Camera model. Allows to identify the camera type.
+          $ref: '#/components/schemas/CameraModel'
+          example: SigCam2
+        video_streams:
+          description: List of video streams available on the camera.
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoStreamStaticInfo'
+          example:
+          - id: Zoom
+            type: Color
+            sensor_width: 5.952
+            sensor_height: 3.348
+            lens_focal_length: 2.7
+            zoom_min: 1.0
+            zoom_max: 32.0
+            can_do_snapshot: true
+          - id: Wide
+            type: Color
+            sensor_width: 5.952
+            sensor_height: 3.348
+            lens_focal_length: 2.7
+            zoom_min: 1.0
+            zoom_max: 1.0
+            can_do_snapshot: true
+          - id: Thermal
+            type: Thermal
+            sensor_width: 3.84
+            sensor_height: 2.88
+            lens_focal_length: 9.1
+            zoom_min: 1.0
+            zoom_max: 1.0
+            can_do_snapshot: true
+    CameraModel:
+      type: string
+      description: "Camera model. Allows to identify the camera type.\n  * `SigCam1`\
+        \ - Sigma camera 1. It has one color and one thermal module.\n  * `SigCam2`\
+        \ - Sigma camera 2. It has two color and one thermal module.\n    One color\
+        \ video stream has 32x zoom capabilities.\n    Thermal module has resolution\
+        \ of 320x240.\n"
+      enum:
+      - SigCam1
+      - SigCam2
+    VideoStreamStaticInfo:
+      type: object
+      description: Information about video stream
+      required:
+      - id
+      - type
+      - sensor_width
+      - sensor_height
+      - lens_focal_length
+      - zoom_min
+      - zoom_max
+      - can_do_snapshot
+      properties:
+        id:
+          description: Unique video stream identifier.
+          type: string
+          example: Zoom
+        type:
+          description: Video stream type.
+          $ref: '#/components/schemas/VideoStreamType'
+          example: Color
+        sensor_width:
+          description: Sensor width in mm.
+          type: number
+          example: 5.952
+        sensor_height:
+          description: Sensor height in mm.
+          type: number
+          example: 3.348
+        lens_focal_length:
+          description: 'Lens focal length in mm. This value is constant and is not
+            affected by zoom. This value corresponds to the `zoom_min` value.
+
+            '
+          type: number
+          example: 2.7
+        zoom_min:
+          description: Minimum zoom level.
+          type: number
+          example: 1.0
+        zoom_max:
+          description: Maximum zoom level.
+          type: number
+          example: 32.0
+        can_do_snapshot:
+          description: 'If true then the video stream supports snapshot functionality.
+            This means that the video stream can provide a snapshot image.
+
+            '
+          type: boolean
+          example: true
+    VideoStreamType:
+      type: string
+      description: 'Video stream type.
+
+        '
+      enum:
+      - Color
+      - Thermal
+    RotateCameraByAngle:
+      type: object
+      description: 'Pan Kite and tilt camera by angle command arguments. If a property
+        is missed then the Kite or camera will not be rotated in this direction.
+
+        '
+      properties:
+        pan:
+          description: 'Change camera pan by this angle in degrees. Positive value
+            means that the camera is rotated to the right.
+
+            '
+          type: number
+          minimum: -180.0
+          maximum: 180.0
+          example: 10.0
+        tilt:
+          description: 'Change camera tilt by this angle in degrees. Positive value
+            means that the camera is rotated up.
+
+            '
+          type: number
+          minimum: -180.0
+          exclusiveMinimum: true
+          maximum: 180.0
+          example: 14.0
+    RotateCameraToAngle:
+      type: object
+      description: 'Pan Kite and tilt camera to angle command arguments. If a property
+        is missed then the Kite or camera will not be rotated in this direction.
+
+        '
+      properties:
+        heading:
+          description: 'Rotate the camera (set its heading) to the heading specified
+            [0..+360) (degrees). 0 - North, 90 - East, 180 - South, 270 - West.
+
+            '
+          type: number
+          minimum: 0
+          maximum: 360
+          exclusiveMaximum: true
+          example: 90
+        tilt:
+          description: 'Tilt to rotate to in degrees. 0 - means that the camera is
+            looking straight forward. -90 - means that the camera is looking straight
+            down. +90 - means that the camera is looking straight up. +180 - means
+            that the camera is looking backward and upside down.
+
+            '
+          type: number
+          minimum: -180.0
+          exclusiveMinimum: true
+          maximum: 180.0
+          example: 10.0
+    VideoStreamSettings:
+      type: object
+      description: Settings of video stream.
+      required:
+      - id
+      - protocol
+      - codec
+      - url
+      properties:
+        id:
+          description: Unique video stream identifier.
+          type: string
+          example: Zoom
+        protocol:
+          description: Video stream protocol.
+          $ref: '#/components/schemas/VideoProtocol'
+          example: RTP
+        frame_width:
+          description: Video frames width. Presented for fixed resolution encoders.
+          type: number
+          example: 1920
+        frame_height:
+          description: Video frames height. Presented for fixed resolution encoders.
+          type: number
+          example: 1080
+        codec:
+          description: Video codec.
+          $ref: '#/components/schemas/VideoCodec'
+          example: H264
+        url:
+          description: Video stream url.
+          type: string
+          example: rtsp://192.168.2.100:5012/video
+    VideoProtocol:
+      type: string
+      description: 'Video stream protocol.
+
+        '
+      enum:
+      - RTP
+    VideoCodec:
+      type: string
+      description: 'Video codec.
+
+        '
+      enum:
+      - H264
+    VideoStreamDynamicInfo:
+      type: object
+      description: Dynamic (frequently changing) information about video stream
+      required:
+      - id
+      - is_streaming
+      properties:
+        id:
+          description: Unique video stream identifier.
+          type: string
+          example: Zoom
+        is_streaming:
+          description: 'If true then the video stream is currently streaming.
+
+            '
+          type: boolean
+          example: true
+        timestamp:
+          description: 'Video timestamp of the last video frame. For RTP video streams
+            this is the RTP timestamp.
+
+            '
+          type: number
+          example: 123456789
+        fov_horizontal:
+          description: Horizontal field of view in degrees.
+          type: number
+          example: 95.57
+        fov_vertical:
+          description: Vertical field of view in degrees.
+          type: number
+          example: 63.6
+        zoom_level:
+          description: Current zoom level.
+          type: number
+          example: 1.0
+        camera_pan:
+          description: 'Camera pan angle in degrees. 0 - The camera is facing directly
+            forward relative to the Kite. +90 - The camera is facing directly to the
+            right side of the Kite. +180 - The camera is facing directly backward
+            relative to the Kite. -90 - The camera is facing directly to the left
+            side of the Kite.
+
+            '
+          type: number
+          minimum: -180.0
+          exclusiveMinimum: true
+          maximum: 180.0
+          example: 10.0
+        camera_tilt:
+          description: 'Camera tilt angle in degrees. 0 - The camera is level, looking
+            straight ahead relative to the Kite. -90 - The camera is pointing straight
+            down relative to the Kite. +90 - The camera is pointing straight up relative
+            to the Kite.
+
+            '
+          type: number
+          minimum: -180.0
+          exclusiveMinimum: true
+          maximum: 180.0
+          example: 32.0
+        camera_roll:
+          description: 'Camera roll angle in degrees. 0 - The camera is level, with
+            the top facing upward. +90 - The top of the camera is rotated to the right.
+            +180 - The top of the camera is facing downward. -90 - The top of the
+            camera is rotated to the left.
+
+            '
+          type: number
+          minimum: -180.0
+          exclusiveMinimum: true
+          maximum: 180.0
+          example: 0.0
+        thermal_color_palette:
+          description: 'Thermal color palette. This property is present only for thermal
+            video streams. If the video stream is not thermal then this property is
+            absent.
+
+            '
+          $ref: '#/components/schemas/ThermalColorPalette'
+          example: Ironbow
+    ThermalColorPalette:
+      type: string
+      description: 'Thermal color palette. Possible values: - WhiteHot - BlackHot
+        - Rainbow - RainbowHighContrast - Ironbow - Lava - Arctic - Glowbow - GradedFire
+        - Hottest
+
+        '
+    NotificationDictionaryItem:
+      type: object
+      description: Notification dictionary item object
+      required:
+      - code
+      - severity
+      - message
+      properties:
+        code:
+          description: Notification code.
+          type: integer
+          example: 10032
+        severity:
+          $ref: '#/components/schemas/NotificationSeverity'
+          description: Notification severity
+          example: Warning
+        message:
+          description: Notification message. This is a human-readable message of the
+            notification. It may contain parameters that are used in the notification
+            texts.
+          type: string
+          example: Kite backup battery temperature is too high
+        system_reaction:
+          description: 'System reaction to the event.
+
+            '
+          type: string
+          example: The temperature is too high to fly.
+        instructions:
+          description: 'Instructions for the operator.
+
+            '
+          type: string
+          example: Please unplug the system and wait until it cools down.
+    NotificationsObject:
+      type: object
+      description: Notifications object
+      required:
+      - to_time
+      - notifications
+      properties:
+        from_time:
+          description: 'The time from which notifications are sent (including the
+            time point itself). In RFC3339 (section 5.6) format. This value typically
+            comes from request query parameter. If request parameter is missed then
+            only currently active notifications returned and `from_time` is missed.
+            If too many notifications were requested then the value is set to the
+            `end_time` of the first returned notification.
+
+            '
+          type: string
+          format: date-time
+          example: 2025-05-05 13:10:00+00:00
+        to_time:
+          description: Current system time up to which notifications were fetched
+            (excluding the time point itself). In RFC3339 (section 5.6) format.
+          type: string
+          format: date-time
+          example: 2025-05-05 13:11:02.582000+00:00
+        notifications:
+          description: Notifications array. If no notifications are registered in
+            the time interval from `from_time` to `to_time` then the array is empty.
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+    Notification:
+      type: object
+      description: One notification item
+      required:
+      - severity
+      - code
+      - message
+      - begin_time
+      properties:
+        severity:
+          $ref: '#/components/schemas/NotificationSeverity'
+          description: Notification severity
+          example: Warning
+        code:
+          description: Notification code. See the dictionary for all possible codes.
+          type: integer
+          example: 10032
+        message:
+          description: Notification message. This is a human-readable message of the
+            notification. It may contain parameters that are used in the notification
+            texts.
+          type: string
+          example: Kite backup battery temperature is too high
+        begin_time:
+          description: Notification begin time. This is the time point when the notification
+            was initially detected. In RFC3339 (section 5.6) format.
+          type: string
+          format: date-time
+          example: 2025-05-05 13:10:00.231000+00:00
+        end_time:
+          description: Notification end time. This is the time point when the notification
+            was gone. In RFC3339 (section 5.6) format. If notification is still not
+            gone then the property is absent.
+          type: string
+          format: date-time
+          example: 2025-05-05 13:10:30.853000+00:00
+        parameters:
+          description: 'Notification parameters. This is a dictionary of key-value
+            pairs that are used in the notification texts. The keys are defined in
+            the notification code dictionary.
+
+            '
+          type: object
+          additionalProperties: true
+    NotificationSeverity:
+      type: string
+      description: 'Notification severity enumeration. * `Info` - Something happened
+        that is not an issue, but may be of interest * `Warning` - Something bad happened,
+        but functionality is not affected * `Critical` - Something bad happened, some
+        functionality is broken * `Fatal` - Something bad happened, system is not
+        functional
+
+        '
+      enum:
+      - Info
+      - Warning
+      - Critical
+      - Fatal
+    TakeoffAltitude:
+      type: object
+      description: Kite takeoff altitude.
+      properties:
+        altitude:
+          description: Kite takeoff altitude (meters). Property is not presented when
+            the value is unknown.
+          type: number
+          example: 1
+    RotateKiteByAngleCommand:
+      type: object
+      description: Rotate Kite by angle command data
+      required:
+      - angle
+      properties:
+        angle:
+          description: Rotate the Kite by the angle specified. Positive value - rotate
+            clockwise (degrees)
+          type: number
+          minimum: -360
+          maximum: 360
+    RotateKiteWithSpeedCommand:
+      type: object
+      description: Rotate Kite with speed command data
+      required:
+      - speed
+      - duration
+      properties:
+        speed:
+          description: 'Rotate the Kite with the angle speed specified. Positive value
+            - rotate clockwise (degrees/sec). Minimum absolute speed is `kite_rotation_speed_min`
+            (degrees/sec). Maximum absolute speed is `kite_rotation_speed_max` (degrees/sec).
+
+            '
+          type: number
+        duration:
+          description: Duration of the command in seconds. The Kite will rotate with
+            the speed specified for the time specified.
+          type: number
+          minimum: 0.1
+          maximum: 10
+      example:
+        speed: 30
+        duration: 5
+    RotateKiteToHeadingCommand:
+      type: object
+      description: Rotate Kite to heading command data
+      required:
+      - heading
+      properties:
+        heading:
+          description: 'Rotate the Kite (set Kite heading) to the heading specified
+            [0..+360) (degrees). 0 North, 90 East, 180 South, 270 West.
+
+            '
+          type: number
+          minimum: 0
+          maximum: 360
+          exclusiveMaximum: true
+    FlightHardLimits:
+      type: object
+      description: Flight hard limits
+      required:
+      - altitude_max
+      - kite_rotation_speed_min
+      - kite_rotation_speed_max
+      properties:
+        altitude_max:
+          description: 'Absolute maximum altitude the Kite can fly. Tether total length
+            or a limitation according to local regulations (meters)
+
+            '
+          type: number
+        kite_rotation_speed_min:
+          description: Minimum absolute speed Kite can rotate with (to change heading)
+            (degrees/sec)
+          type: number
+        kite_rotation_speed_max:
+          description: Maximum absolute speed Kite can rotate with (to change heading)
+            (degrees/sec)
+          type: number
+      example:
+        altitude_max: 45.0
+        kite_rotation_speed_min: 2.0
+        kite_rotation_speed_max: 30.0
+    FlightDynamicInfo:
+      type: object
+      description: 'Important flight information. Flight information contains the
+        data that is of greatest interest and changes most frequently. A property
+        is not presented if it could not be gathered (for example due to a magnetometer
+        or a GPS issue). Note: there is always a margin of error between the `altitude_target`
+        and the altitude the Kite will take. And this error is not a constant.
+
+        '
+      required:
+      - flight_state
+      properties:
+        flight_state:
+          $ref: '#/components/schemas/FlightState'
+        altitude:
+          description: Current kite altitude above the Ground Station (meters)
+          type: number
+          minimum: 0
+        altitude_target:
+          description: Target Kite altitude set by user or autopilot (meters)
+          type: number
+          minimum: 0
+        kite_heading:
+          description: Kite heading (not to be confused with camera heading) [0..360)
+            (degrees)
+          type: number
+          minimum: 0
+          maximum: 360
+          exclusiveMaximum: true
+        is_rotating:
+          description: 'Whether Kite is rotating (changing heading) as a result of
+            the rotation command. true - Kite is rotating
+
+            '
+          type: boolean
+        is_changing_altitude:
+          description: 'Whether Kite is changing altitude as a result of the set altitude
+            command. true - Kite is changing altitude
+
+            '
+          type: boolean
+        kite_gps_lat:
+          description: Latitude reported by Kite GPS [-90..+90] (degrees)
+          type: number
+          minimum: -90
+          maximum: 90
+        kite_gps_lon:
+          description: Longitude reported by Kite GPS (-180..+180] (degrees)
+          type: number
+          minimum: -180
+          exclusiveMinimum: true
+          maximum: 180
+        kite_gps_elevation:
+          description: Elevation reported by Kite GPS (meters)
+          type: number
+        kite_gps_accuracy:
+          description: Kite GPS accuracy in meters
+          type: number
+          minimum: 0
+      example:
+        flight_state: Flying
+        altitude: 40
+        altitude_target: 11
+        kite_heading: 98
+        is_rotating: false
+        is_changing_altitude: true
+        kite_gps_lat: 47.3883959
+        kite_gps_lon: 8.5229581
+        kite_gps_elevation: 443
+        kite_gps_accuracy: 0.23
+    FlightState:
+      type: string
+      description: "Flight state enumeration.\n  * `Unknown` - We couldn't get required\
+        \ data to conclude flight sate. This may happen due to numerous reasons:\n\
+        \    Kite detached, Kite power is off, etc. More information can be found\
+        \ in notifications.\n  * `StandBy` - Kite is on the Ground Station\n  * `TakingOff`\
+        \ - Kite is doing preflight checks or taking off\n  * `Flying` - Kite is flying\n\
+        \  * `Landing` - Kite is landing\n  * `SafetyLanding` - Kite is landing due\
+        \ to a critical issue happened during the flight.\n    More information can\
+        \ be found in notifications.\n  * `SafetyDescending` - Kite is descending\
+        \ for safety reasons (due to strong wind or weak GPS signal).\n    More information\
+        \ can be found in notifications.\n"
+      enum:
+      - Unknown
+      - StandBy
+      - TakingOff
+      - Flying
+      - Landing
+      - SafetyLanding
+      - SafetyDescending
+    FlightSoftLimits:
+      type: object
+      description: Kite flight soft limits set by an operator.
+      required:
+      - altitude_max
+      properties:
+        altitude_max:
+          description: 'Kite maximum altitude soft limit set by an operator (meters).
+            Must be between Kite 1m and `altitude_hard_limit`. This value resets on
+            system reboot.
+
+            '
+          type: number
+          example: 45
+    RecorderStatus:
+      type: object
+      description: Current status of the video recorder.
+      required:
+      - directory
+      - started_recording_timestamp
+      properties:
+        directory:
+          type: string
+          description: Directory path of the recording on the filesystem (URL-encoded).
+          example: 20220616%5F132946%5F%2B0200
+        started_recording_timestamp:
+          type: string
+          format: date-time
+          description: Last time a recording was started since boot, or zero otherwise.
+          example: '2023-10-01T12:00:00Z'
+        stopped_recording_timestamp:
+          type: string
+          format: date-time
+          description: Last time a recording was stopped, or current time if recording.
+          example: '2023-10-01T12:00:00Z'
+        is_recording:
+          type: boolean
+          description: Whether the recorder is currently running.
+          example: true
+        recording_seconds:
+          type: integer
+          format: int32
+          description: Number of seconds the current recording has been running.
+          example: 120
+    Recording:
+      type: object
+      description: Represents a video recording, including video files and metadata.
+      required:
+      - directory
+      - is_being_recorded
+      - videos
+      properties:
+        directory:
+          type: string
+          description: Directory of the recording, URL-encoded.
+          example: 20220616%5F132946%5F%2B0200
+        is_being_recorded:
+          type: boolean
+          description: Whether this recording is currently being recorded.
+          example: true
+        videos:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoFile'
+    VideoFile:
+      description: Represents a video file in a recording, including metadata.
+      type: object
+      required:
+      - type
+      - directory
+      - name
+      - size
+      - is_recording
+      properties:
+        type:
+          $ref: '#/components/schemas/VideoStreamType'
+        directory:
+          type: string
+          description: Directory of the video recording on the FS
+          example: 20211126_165209_+0100
+        name:
+          type: string
+        size:
+          type: integer
+          format: int64
+        is_recording:
+          type: boolean
+    DiskStats:
+      type: object
+      description: Disk usage statistics in bytes.
+      required:
+      - used
+      - total
+      properties:
+        used:
+          type: integer
+          format: int64
+          minimum: 0
+        total:
+          type: integer
+          format: int64
+          minimum: 0
