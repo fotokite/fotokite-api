@@ -3,32 +3,54 @@ import json
 import logging
 import threading
 import time
+from typing import Callable, cast
 
 import requests
 from websockets.sync.client import connect
 
 from fotokite_api.utils import BASE_REST_API_URL, BASE_WEBSOCKET_API_URL
 
-notifications = {}
+Notification = dict[str, str]
+notifications: dict[str, Notification] = {}
 
 
-def dictionary() -> dict:
+def dictionary() -> dict[str, object]:
+    """Fetches the notifications dictionary.
+
+    Returns:
+        A dictionary containing notification definitions with their codes and descriptions.
+        If the request fails or an exception occurs, logs the error and returns an empty dictionary.
+
+    Raises:
+        requests.HTTPError: If the HTTP request fails with a status code other than 200.
+        Exception: For any other exceptions encountered during the request.
+    """
     try:
         response = requests.get(f"{BASE_REST_API_URL}/info/notifications/dictionary")
         if response.status_code == 200:
-            return response.json()
+            return cast(dict[str, object], response.json())
         else:
             response.raise_for_status()
     except Exception as e:
         logging.error(f"Error fetching notifications dictionary: {e}")
-        return {}
+
+    return {}
 
 
 def notifications_telemetry(
-    on_message_callback, max_messages=None, from_time=None
+    on_message_callback: Callable[[dict[str, list[Notification]]], None],
+    max_messages: int | None = None,
+    from_time: str | None = None,
 ) -> None:
+    """Subscribes to notifications telemetry.
+
+    Args:
+        on_message_callback: A callback function to handle incoming messages.
+        max_messages: The maximum number of messages to process. Defaults to None.
+        from_time: The starting time for fetching messages. Defaults to None.
+    """
     if from_time is None:
-        now = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(time.time() - 600))
+        now = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
         from_time = now
 
     ws_url = f"{BASE_WEBSOCKET_API_URL}/telemetry/notifications/subscribe"
@@ -50,7 +72,18 @@ def notifications_telemetry(
         logging.error(f"Error in notifications telemetry: {e}")
 
 
-def _handle_notifications(message: list[dict]):
+def _handle_notifications(message: dict[str, list[Notification]]) -> None:
+    """Processes a dictionary of notifications, updating the global notifications store.
+
+    For each notification in the input message:
+    - If the notification has an 'end_time', it removes the notification from the global store.
+    - Otherwise, it adds or updates the notification in the global store using a unique identifier.
+    - The identifier is constructed from the notification's 'code' and 'begin_time'.
+    Used to keep track of current notifications and their statuses.
+
+    Args:
+        message: A dictionary containing a list of notifications under the "notifications" key.
+    """
     for notification in message.get("notifications", []):
         identifier = f"{notification.get("code")}_{notification.get("begin_time")}"
         end_time = notification.get("end_time")
@@ -64,17 +97,25 @@ def _handle_notifications(message: list[dict]):
             notifications[identifier] = notification
 
 
-def log_notifications():
+def log_notifications() -> None:
+    """Periodically logs the current notifications every 5 seconds.
+
+    This function runs an infinite loop, checking for the presence of notifications.
+    If notifications are available, it logs them; otherwise, it logs that there are no notifications.
+    """
     while True:
         time.sleep(5)
         if notifications:
-            logging.info(f"Current notifications: {notifications}")
+            logging.info("Notifications:\n%s", json.dumps(notifications, indent=2))
         else:
             logging.info("No notifications at the moment")
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
 
     parser = argparse.ArgumentParser(description="Fotokite API Notifications Example")
     parser.add_argument(
@@ -85,14 +126,14 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    def start_telemetry_with_logging():
-        # Start logging notifications in a separate thread
+    def start_telemetry_with_logging() -> None:
+        # Start the logger in a separate thread
         logging_thread = threading.Thread(target=log_notifications, daemon=True)
         logging_thread.start()
         # Start telemetry listening
         notifications_telemetry(_handle_notifications)
 
-    actions = {
+    actions: dict[str, Callable[[], object]] = {
         "dictionary": lambda: logging.info(f"Notifications Dictionary: {dictionary()}"),
         "telemetry": start_telemetry_with_logging,
     }

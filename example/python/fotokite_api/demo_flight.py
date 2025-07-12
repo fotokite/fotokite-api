@@ -90,7 +90,6 @@ def demo_flight() -> None:
 
         time.sleep(5)
 
-
         if land():
             logging.info("Landing command sent.")
     else:

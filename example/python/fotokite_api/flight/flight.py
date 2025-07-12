@@ -10,6 +10,15 @@ from fotokite_api.utils import BASE_REST_API_URL, BASE_WEBSOCKET_API_URL
 
 
 def hard_limits() -> dict[str, object]:
+    """Fetches the hard flight limits of the Kite.
+
+    Returns:
+        A dictionary containing the hard flight limits if the request is successful.
+        Returns an empty dictionary if an error occurs or the request fails.
+
+    Raises:
+        requests.HTTPError: If the response status code is not 200 and an HTTP error occurs.
+    """
     try:
         response = requests.get(f"{BASE_REST_API_URL}/info/flight/hard_limits")
         if response.status_code == 200:
@@ -23,6 +32,17 @@ def hard_limits() -> dict[str, object]:
 
 
 def takeoff_altitude() -> dict[str, object]:
+    """Fetches the takeoff altitude of the Kite.
+
+    Returns:
+        A dictionary containing the takeoff altitude information if the request is successful.
+        Returns an empty dictionary if an error occurs.
+
+    Raises:
+        requests.HTTPError: If the HTTP request fails with a non-200 status code.
+        Exception: For any other exceptions encountered during the request.
+
+    """
     try:
         response = requests.get(f"{BASE_REST_API_URL}/info/flight/takeoff_altitude")
         if response.status_code == 200:
@@ -36,6 +56,13 @@ def takeoff_altitude() -> dict[str, object]:
 
 
 def take_off() -> bool:
+    """Sends a take off command to the Ground Station.
+
+    Returns:
+        True if the take off command was sent successfully (HTTP 200), False otherwise.
+        This does not guarantee that the Kite will take off, only that the command was sent successfully.
+        To check if the Kite has taken off, monitor the flight telemetry.
+    """
     try:
         response = requests.post(f"{BASE_REST_API_URL}/command/flight/take_off")
         if response.status_code == 200:
@@ -50,6 +77,13 @@ def take_off() -> bool:
 
 
 def land() -> bool:
+    """Sends a land command to the Ground Station.
+
+    Returns:
+        True if the land command was sent successfully (HTTP 200), False otherwise.
+        This does not guarantee that the Kite will land, only that the command was sent successfully.
+        To check if the Kite has landed, monitor the flight telemetry.
+    """
     try:
         response = requests.post(f"{BASE_REST_API_URL}/command/flight/land")
         if response.status_code == 200:
@@ -64,6 +98,14 @@ def land() -> bool:
 
 
 def abort() -> bool:
+    """Sends an abort command to the Ground Station.
+
+    Returns:
+        True if the abort command was sent successfully (HTTP 200), False otherwise.
+        This command is used to stop any ongoing flight operations immediately.
+        It does not guarantee that the Kite will stop immediately, but it will attempt to halt any
+        ongoing flight commands.
+    """
     try:
         response = requests.post(f"{BASE_REST_API_URL}/command/flight/abort")
         if response.status_code == 200:
@@ -79,6 +121,16 @@ def abort() -> bool:
 
 
 def set_altitude(altitude: float) -> bool:
+    """Sends a set altitude command to the Ground Station.
+
+    Args:
+        altitude: The target altitude to set.
+
+    Returns:
+        True if the set altitude command was sent successfully (HTTP 200), False otherwise.
+        This command sets the Kite's altitude to the specified value, but does not guarantee that the Kite
+        will reach that altitude immediately. Monitor the flight telemetry to confirm altitude changes.
+    """
     try:
         response = requests.post(
             f"{BASE_REST_API_URL}/command/flight/set_altitude",
@@ -97,6 +149,16 @@ def set_altitude(altitude: float) -> bool:
 
 
 def rotate_by_angle(angle: float) -> bool:
+    """Sends a rotate by angle command to the Ground Station.
+
+    Args:
+        angle (float): The angle to rotate the Kite.
+
+    Returns:
+        True if the command was sent successfully, False otherwise.
+        This command rotates the Kite by the specified angle. The angle should be between -360 and 360 degrees.
+        Positive values indicate clockwise rotation, while negative values indicate counter-clockwise rotation.
+    """
     try:
         if angle < -360 or angle > 360:
             logging.error("Angle must be between -360 and 360 degrees.")
@@ -118,8 +180,15 @@ def rotate_by_angle(angle: float) -> bool:
 
 
 def flight_telemetry(
-    on_message_callback: Callable[[dict], None], max_messages=None
+    on_message_callback: Callable[[dict[str, object]], None],
+    max_messages: int | None = None,
 ) -> None:
+    """Subscribes to flight telemetry updates from the System.
+
+    Args:
+        on_message_callback: Callback function to handle incoming telemetry messages.
+        max_messages: Maximum number of messages to receive before unsubscribing. Defaults to None(read forever).
+    """
     ws_url = f"{BASE_WEBSOCKET_API_URL}/telemetry/flight/subscribe"
     try:
         with connect(ws_url) as websocket:
@@ -167,7 +236,9 @@ if __name__ == "__main__":
             f"Flight Take Off Altitude: {takeoff_altitude()}"
         ),
         "telemetry": lambda: flight_telemetry(
-            lambda data: logging.info(f"Telemetry message received: {data}")
+            lambda data: logging.info(
+                "Flight telemetry:\n%s", json.dumps(data, indent=2)
+            )
         ),
         "take_off": take_off,
         "land": land,

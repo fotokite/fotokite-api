@@ -16,6 +16,7 @@ python = "^3.12"
 requests = "^2.32.4"
 websockets = "^15.0.1"
 asyncio = "^3.4.3"
+types-requests = "^2.32.4.20250611"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.6.4"
