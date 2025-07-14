@@ -112,11 +112,11 @@ def log_notifications() -> None:
 
 
 def start_telemetry_with_logging() -> None:
-        # Start the logger in a separate thread
-        logging_thread = threading.Thread(target=log_notifications, daemon=True)
-        logging_thread.start()
-        # Start telemetry listening
-        notifications_telemetry(_handle_notifications)
+    # Start the logger in a separate thread
+    logging_thread = threading.Thread(target=log_notifications, daemon=True)
+    logging_thread.start()
+    # Start telemetry listening
+    notifications_telemetry(_handle_notifications)
 
 
 if __name__ == "__main__":

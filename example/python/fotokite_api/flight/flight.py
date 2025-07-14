@@ -165,7 +165,8 @@ def rotate_by_angle(angle: float = 90) -> bool:
             return False
 
         response = requests.post(
-            f"{BASE_REST_API_URL}/commands/flight/rotate_by_angle", json={"angle": angle}
+            f"{BASE_REST_API_URL}/commands/flight/rotate_by_angle",
+            json={"angle": angle},
         )
         if response.status_code == 200:
             logging.info("Rotate by angle command sent successfully.")
