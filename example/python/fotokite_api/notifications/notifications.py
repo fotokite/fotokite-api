@@ -111,6 +111,14 @@ def log_notifications() -> None:
             logging.info("No notifications at the moment")
 
 
+def start_telemetry_with_logging() -> None:
+        # Start the logger in a separate thread
+        logging_thread = threading.Thread(target=log_notifications, daemon=True)
+        logging_thread.start()
+        # Start telemetry listening
+        notifications_telemetry(_handle_notifications)
+
+
 if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,
@@ -125,13 +133,6 @@ if __name__ == "__main__":
         help="Choose which action to trigger",
     )
     args = parser.parse_args()
-
-    def start_telemetry_with_logging() -> None:
-        # Start the logger in a separate thread
-        logging_thread = threading.Thread(target=log_notifications, daemon=True)
-        logging_thread.start()
-        # Start telemetry listening
-        notifications_telemetry(_handle_notifications)
 
     actions: dict[str, Callable[[], object]] = {
         "dictionary": lambda: logging.info(f"Notifications Dictionary: {dictionary()}"),

@@ -64,7 +64,7 @@ def take_off() -> bool:
         To check if the Kite has taken off, monitor the flight telemetry.
     """
     try:
-        response = requests.post(f"{BASE_REST_API_URL}/command/flight/take_off")
+        response = requests.post(f"{BASE_REST_API_URL}/commands/flight/take_off")
         if response.status_code == 200:
             logging.info("Take off command sent successfully.")
             return True
@@ -85,7 +85,7 @@ def land() -> bool:
         To check if the Kite has landed, monitor the flight telemetry.
     """
     try:
-        response = requests.post(f"{BASE_REST_API_URL}/command/flight/land")
+        response = requests.post(f"{BASE_REST_API_URL}/commands/flight/land")
         if response.status_code == 200:
             logging.info("Land command sent successfully.")
             return True
@@ -107,7 +107,7 @@ def abort() -> bool:
         ongoing flight commands.
     """
     try:
-        response = requests.post(f"{BASE_REST_API_URL}/command/flight/abort")
+        response = requests.post(f"{BASE_REST_API_URL}/commands/flight/abort")
         if response.status_code == 200:
             logging.info("Abort command sent successfully.")
             return True
@@ -133,7 +133,7 @@ def set_altitude(altitude: float) -> bool:
     """
     try:
         response = requests.post(
-            f"{BASE_REST_API_URL}/command/flight/set_altitude",
+            f"{BASE_REST_API_URL}/commands/flight/set_altitude",
             json={"altitude": altitude},
         )
         if response.status_code == 200:
@@ -148,7 +148,7 @@ def set_altitude(altitude: float) -> bool:
     return False
 
 
-def rotate_by_angle(angle: float) -> bool:
+def rotate_by_angle(angle: float = 90) -> bool:
     """Sends a rotate by angle command to the Ground Station.
 
     Args:
@@ -165,7 +165,7 @@ def rotate_by_angle(angle: float) -> bool:
             return False
 
         response = requests.post(
-            f"{BASE_REST_API_URL}/command/flight/rotate_by_angle", json={"angle": angle}
+            f"{BASE_REST_API_URL}/commands/flight/rotate_by_angle", json={"angle": angle}
         )
         if response.status_code == 200:
             logging.info("Rotate by angle command sent successfully.")
@@ -243,7 +243,7 @@ if __name__ == "__main__":
         "take_off": take_off,
         "land": land,
         "abort": abort,
-        "set_altitude": lambda: set_altitude(1.5),
+        "set_altitude": lambda: set_altitude(1),
         "rotate_by_angle": lambda: rotate_by_angle(90.0),
     }
 
