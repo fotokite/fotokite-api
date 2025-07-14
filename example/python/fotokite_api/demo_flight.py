@@ -43,52 +43,36 @@ def handle_flight(data: dict[str, object]) -> None:
         return
 
     if not state["altitude_changed"]:
-        logging.info("Waiting for altitude to be set.")
-        if set_altitude(1.8):
-            logging.info("Altitude set to 1.8 meters.")
+        logging.info("Setting altitude to 1 meter.")
+        if set_altitude(1):
+            logging.info("Altitude set command sent.")
+            time.sleep(5)
             state["altitude_changed"] = True
 
-    elif state["altitude_changed"] and not state["first_rotation"]:
-        logging.info("Waiting for first rotation to complete.")
+    elif not state["first_rotation"]:
+        logging.info("Rotating by 180 degrees.")
         if rotate_by_angle(180.0):
-            logging.info("Rotation by 180 degrees sent.")
+            logging.info("Rotation command (180 deg) sent.")
+            time.sleep(15)
             state["first_rotation"] = True
 
-    elif (
-        state["altitude_changed"]
-        and state["first_rotation"]
-        and not state["second_rotation"]
-    ):
-        logging.info("Waiting for second rotation to complete.")
-        if rotate_by_angle(-90.0):
-            logging.info("Rotation by -90 degrees sent.")
+    elif not state["second_rotation"]:
+        logging.info("Rotating back by -180 degrees.")
+        if rotate_by_angle(-180.0):
+            logging.info("Rotation command (-180 deg) sent.")
+            time.sleep(15)
             state["second_rotation"] = True
 
-    elif (
-        state["altitude_changed"]
-        and state["first_rotation"]
-        and state["second_rotation"]
-        and not state["landing"]
-    ):
-        logging.info("All actions completed, preparing to land.")
+    elif not state["landing"]:
+        logging.info("Landing now.")
         if land():
             logging.info("Landing command sent.")
+            time.sleep(15)
             state["landing"] = True
 
 
 def demo_flight() -> None:
-    """Demonstrates a flight sequence using Fotokite API.
-
-    1. Configures logging for monitoring and debugging.
-    2. Fetches and logs system information.
-    3. Starts three telemetry threads for flight, system, and notifications, each logging received data.
-    4. Initiates takeoff and logs the result; aborts if takeoff fails.
-    5. Keeps the main thread alive to process telemetry updates until landing is detected.
-    6. Performs different flight commands (altitude change, rotations etc.) in response to telemetry data.
-    7. Waits briefly after landing to capture final telemetry data.
-
-    All actions and telemetry data are logged for monitoring and debugging purposes.
-    """
+    """Demonstrates a flight sequence using Fotokite API with waits after each command."""
     logging.basicConfig(level=logging.INFO)
 
     # Identify the system
@@ -134,7 +118,7 @@ def demo_flight() -> None:
     while not state["landing"]:
         time.sleep(1)
 
-    # Allow time for final telemetry after landing
+    # Final wait after landing to collect telemetry
     time.sleep(10)
 
 
