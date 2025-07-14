@@ -1,6 +1,6 @@
 # Fotokite API
 
-The **Fotokite API** enables customers and partners to seamlessly integrate and automate Fotokite systems within their workflows. It's goal is to provide a flexible, high-level interface, with which you can easily control Fotokite systems and access real-time data, allowing you to build powerful, customized applications that improve operational efficiency and situational awareness.
+The **Fotokite API** enables customers and partners to seamlessly integrate and automate Fotokite systems with their workflows. Its goal is to provide a flexible, high-level interface, with which you can easily control Fotokite systems and access real-time data, allowing you to build powerful, customized applications that improve operational efficiency and situational awareness.
 
 The API offers two main types of interfaces:
 
