@@ -25,6 +25,13 @@ This setup helps you get up and running quickly, without having to manually mana
   Run: `make run_notifications action=<desired_action>`
 
 - **Flight Demo**
+  Demonstrates a simple flight sequence using the Fotokite API.
+
+  - Sets up logging for monitoring and debugging purposes.
+  - Retrieves and logs system information from the Fotokite device.
+  - Launches three telemetry threads to handle flight, system, and notification data streams.
+  - Initiates takeoff and logs the outcome; aborts the sequence if takeoff is unsuccessful.
+  - Maintains the main thread to continuously process telemetry updates until landing is detected.
   Run: `make run_demo_flight`
 
 <div style="background-color:#CF8008; color:white; padding:1em; border-radius:6px;">
