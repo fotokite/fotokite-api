@@ -2,7 +2,7 @@
 
 ## Dependency Management
 
-We use [Poetry](https://python-poetry.org/) for dependency management and packaging. Poetry makes it easy to install, update, and manage all required dependencies in a clean and consistent way.
+We use [Poetry](https://python-poetry.org/) for dependency management and packaging.
 
 ## Makefile
 
