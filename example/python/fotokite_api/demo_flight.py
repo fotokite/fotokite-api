@@ -17,7 +17,6 @@ from fotokite_api.system.system import system_info, system_telemetry
 
 
 class FlightState(TypedDict):
-    flight_state: Optional[str]
     altitude_changed: bool
     first_rotation: bool
     second_rotation: bool
@@ -25,7 +24,6 @@ class FlightState(TypedDict):
 
 
 state: FlightState = {
-    "flight_state": None,
     "altitude_changed": False,
     "first_rotation": False,
     "second_rotation": False,
@@ -35,39 +33,35 @@ state: FlightState = {
 
 def handle_flight(data: dict[str, object]) -> None:
     logging.info("Flight Telemetry:\n%s", json.dumps(data, indent=2))
-    flight_state = data.get("flight_state")
-    if isinstance(flight_state, str):
-        state["flight_state"] = flight_state
+    flight_state = data.get("flight_state", "Unknown")
+    is_changing_altitude = data.get("is_changing_altitude", False)
+    is_rotating = data.get("is_rotating", False)
 
-    if state["flight_state"] != "Flying":
+    if flight_state != "Flying":
         return
 
     if not state["altitude_changed"]:
         logging.info("Setting altitude to 1 meter.")
         if set_altitude(1):
             logging.info("Altitude set command sent.")
-            time.sleep(5)
             state["altitude_changed"] = True
 
-    elif not state["first_rotation"]:
+    elif not state["first_rotation"] and not is_changing_altitude:
         logging.info("Rotating by 180 degrees.")
         if rotate_by_angle(180.0):
             logging.info("Rotation command (180 deg) sent.")
-            time.sleep(15)
             state["first_rotation"] = True
 
-    elif not state["second_rotation"]:
+    elif not state["second_rotation"] and not is_rotating and not is_changing_altitude:
         logging.info("Rotating back by -180 degrees.")
         if rotate_by_angle(-180.0):
             logging.info("Rotation command (-180 deg) sent.")
-            time.sleep(15)
             state["second_rotation"] = True
 
-    elif not state["landing"]:
+    elif not state["landing"] and not is_rotating and not is_changing_altitude:
         logging.info("Landing now.")
         if land():
             logging.info("Landing command sent.")
-            time.sleep(15)
             state["landing"] = True
 
 
