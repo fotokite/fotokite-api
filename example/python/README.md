@@ -34,6 +34,15 @@ This setup helps you get up and running quickly, without having to manually mana
   - Maintains the main thread to continuously process telemetry updates until landing is detected.
   Run: `make run_demo_flight`
 
+  ### Streamer
+
+  The streamer package illustrates how to convert the RTSP stream to other formats. In `./streamer`, you’ll find examples using both `ffmpeg` and `gstreamer` to pipe the RTSP stream to HLS, making it accessible in a browser.
+
+  - Run with FFMPEG (This requires ffmpeg to be installed on your system):
+    `make run_ffmpeg_streamer`
+  - Run with GStreamer (This requires GStreamer to be installed on your system):
+    `make run_gstreamer_streamer`
+
 <div style="background-color:#CF8008; color:white; padding:1em; border-radius:6px;">
 Important <br/>
 Some of these commands will start the system.<br>
