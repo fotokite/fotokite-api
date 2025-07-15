@@ -2,7 +2,7 @@ import json
 import logging
 import threading
 import time
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from fotokite_api.flight.flight import (
     abort,
