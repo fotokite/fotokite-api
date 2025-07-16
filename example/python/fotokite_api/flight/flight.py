@@ -196,18 +196,38 @@ def flight_telemetry(
             logging.info("Connected to flight telemetry")
             count = 0
             while True:
-                try:
-                    message = websocket.recv()
-                    data = json.loads(message)
-                    on_message_callback(data)
-                    count += 1
-                    if max_messages is not None and count >= max_messages:
-                        break
-                except Exception as e:
-                    logging.error(f"Error receiving telemetry message: {e}")
+                message = websocket.recv()
+                data = json.loads(message)
+                on_message_callback(data)
+                count += 1
+                if max_messages is not None and count >= max_messages:
                     break
     except Exception as e:
         logging.error(f"Error in flight telemetry: {e}")
+
+
+def wait_for(state: str) -> None:
+    """Subscribes to telemetry updates and waits for the System to settle on a
+    given state (that is, wait for a previous command to be executed).
+
+    If this is called instantly after a command, it might falsely return because
+    that command has not started executing yet.
+
+    Args:
+        state: The state to wait for (e.g. "Flying")
+    """
+
+    def check(args: dict[str, object]) -> None:
+        logging.info("got telemetry update %s", args)
+        if args["flight_state"] == state:
+            if not args["is_changing_altitude"] and not args["is_rotating"]:
+                raise StopIteration()
+            else:
+                logging.info("still moving...")
+        else:
+            logging.info("state is still %s not %s...", args["flight_state"], state)
+
+    flight_telemetry(check)
 
 
 if __name__ == "__main__":
