@@ -210,7 +210,7 @@ def wait_for(state: str) -> None:
     """Subscribes to telemetry updates and waits for the System to settle on a
     given state (that is, wait for a previous command to be executed).
 
-    If this is called instantly after a command, it might flasely return because
+    If this is called instantly after a command, it might falsely return because
     that command has not started executing yet.
 
     Args:
