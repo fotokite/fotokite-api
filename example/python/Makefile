@@ -38,6 +38,10 @@ run_demo_flight:
 	poetry install
 	poetry run python -m fotokite_api.demo_flight
 
+run_demo_sequential:
+	poetry install
+	poetry run python -m fotokite_api.demo_sequential
+
 run_ffmpeg_streamer:
 	poetry install
 	poetry run python -m fotokite_api.streamer.ffmpeg

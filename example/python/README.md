@@ -34,6 +34,11 @@ This setup helps you get up and running quickly, without having to manually mana
   - Maintains the main thread to continuously process telemetry updates until landing is detected.
   Run: `make run_demo_flight`
 
+- **Sequential Demo**
+  This demo does the same thing as the flight demo, but with much less monitoring and error handling. This demonstrates a very simple automation based on the API that can be used while the system is still monitored via Fotokite Live.
+
+  Run: `make run_demo_sequential`
+
   ### Streamer
 
   The streamer package illustrates how to convert the RTSP stream to other formats. In `./streamer`, you’ll find examples using both `ffmpeg` and `gstreamer` to pipe the RTSP stream to HLS, making it accessible in a browser.
