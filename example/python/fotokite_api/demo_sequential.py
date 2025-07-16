@@ -11,8 +11,19 @@ from fotokite_api.flight.flight import (
 
 
 def demo_sequential() -> None:
+    """
+    This demo sends commands and waits for them to complete, one after the
+    other. The waiting uses a Websocket subscription under the hood, but this
+    is hidden by an abstraction.
+
+    Notifications are not monitored, code like this should only be used with
+    Fotokite Live open in parallel.
+    """
     wait_for(state="StandBy")
     take_off()
+    # the sleep after each command is currently required to avoid a race
+    # condition where the command has *not started yet* when running the
+    # `wait_for`, which would make it exit immediatly
     time.sleep(1)
     wait_for(state="Flying")
     set_altitude(2)
