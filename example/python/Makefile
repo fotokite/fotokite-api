@@ -37,3 +37,11 @@ run_notifications:
 run_demo_flight:
 	poetry install
 	poetry run python -m fotokite_api.demo_flight
+
+run_ffmpeg_streamer:
+	poetry install
+	poetry run python -m fotokite_api.streamer.ffmpeg
+
+run_gstreamer_streamer:
+	poetry install
+	poetry run python -m fotokite_api.streamer.gstreamer
