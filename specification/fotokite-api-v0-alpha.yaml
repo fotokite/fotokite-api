@@ -12,8 +12,8 @@ paths:
     get:
       tags:
       - Health
-      summary: Health Check
-      description: Returns the health status of the API
+      summary: Get health status
+      description: Returns the health status of the Fotokite API.
       responses:
         200:
           description: API is healthy
@@ -33,8 +33,8 @@ paths:
     get:
       tags:
       - System
-      summary: System Information
-      description: Returns information about the system and its components
+      summary: Get system information
+      description: Returns system information.
       responses:
         200:
           $ref: '#/components/responses/Get200SystemResponse'
@@ -42,10 +42,8 @@ paths:
     get:
       tags:
       - System
-      summary: Get system dynamic information.
-      description: 'System dynamic (frequently changing) information contains the
-        data that does not change as often as flight information and also may not
-        be so interesting.
+      summary: Get system telemetry
+      description: 'Returns frequently changing system information.
 
         '
       responses:
@@ -348,11 +346,11 @@ paths:
     get:
       tags:
       - Notifications
-      summary: Get Notifications Dictionary
-      description: 'Request the notifications dictionary. The dictionary contains
-        all possible notifications that can be sent by the System. It is recommended
-        to use this endpoint to get the list of all possible notifications and their
-        texts to display them to the user.
+      summary: Get notifications dictionary
+      description: 'Returns the notifications dictionary. The dictionary contains
+        all possible notifications that can be sent by the Fotokite system. It is
+        recommended to use this endpoint to get the list of all possible notifications
+        and their texts to display them to the user.
 
         '
       responses:
@@ -370,22 +368,22 @@ paths:
       tags:
       - Notifications
       summary: Get system notifications
-      description: 'Request System notifications. Notification is a temporary or permanent
-        event that reflects current System state. This may be an error state or a
-        notification. If request body is missed then returns all currently active
-        notifications. Every response contains `to_time` time point. Up to this point
-        notifications are fetched. This means that a notification gets into the response
-        if its `end_time` is not set or greater or equal to `to_time`. It is recommended
-        to use this point for the next request to not miss any notification and to
-        not request the same notifications multiple times.
+      description: 'Returns system notifications. A notification is a temporary or
+        permanent event that reflects the current system state. This could be an error
+        state, an alert or a simple message. If the request body is empty, all currently
+        active notifications will be returned. Every response contains to_time time
+        point. Up to this time point notifications are fetched. An event gets into
+        the response, if the end_time is not set or greater or equal to the to_time.
+        It is recommended to use this point for the next request to not miss any notification
+        and to not request the same notifications multiple times.
 
         '
       parameters:
       - name: from_time
         in: query
         description: 'The time from which notifications will be sent (including the
-          time point itself). In RFC3339 (section 5.6) format. If the property is
-          missed then only currently active notifications are returned.
+          time point itself). In RFC3339 (section 5.6) format. If this parameter is
+          not set then only currently active notifications will be returned.
 
           '
         schema:
@@ -403,8 +401,8 @@ paths:
     get:
       tags:
       - Flight
-      summary: Get Flight hard limits.
-      description: 'Get Flight hard limits. Hard limits contain those properties that
+      summary: Get flight hard limits
+      description: 'Returns flight hard limits. Hard limits contain properties that
         either do not change (ex. physical limitations) or change rarely (ex. legal
         restrictions).
 
@@ -420,10 +418,10 @@ paths:
     get:
       tags:
       - Flight
-      summary: Request the Kite takeoff altitude.
-      description: 'The takeoff altitude is the altitude to which the Kite rises after
-        takeoff. It is important for setups where the Kite is embedded into a vehicle.
-        Important: Kite cannot fly lower than takeoff altitude.
+      summary: Get takeoff altitude
+      description: 'Returns the takeoff altitude. The takeoff altitude is the altitude
+        to which the Kite rises after takeoff. Important: The Kite cannot fly lower
+        than the takeoff altitude.
 
         '
       responses:
@@ -437,8 +435,8 @@ paths:
     get:
       tags:
       - Flight
-      summary: Get flight dynamic information.
-      description: 'Get flight dynamic (frequently changing) information.
+      summary: Get flight telemetry
+      description: 'Returns frequently changing flight information.
 
         '
       responses:
@@ -452,7 +450,9 @@ paths:
     get:
       tags:
       - Flight
-      summary: Request the Kite flight soft limits
+      summary: Get flight soft limits
+      description: Returns Kite flight soft limits. Soft limits can either be set
+        in Fotokite Live or via the API.
       responses:
         200:
           description: Request finished successfully
@@ -464,7 +464,7 @@ paths:
     post:
       tags:
       - Flight
-      summary: Send command to take off the Kite
+      summary: Take off
       responses:
         200:
           $ref: '#/components/responses/CommandSuccess'
@@ -476,7 +476,7 @@ paths:
     post:
       tags:
       - Flight
-      summary: Send command to land the Kite
+      summary: Land
       responses:
         200:
           $ref: '#/components/responses/CommandSuccess'
@@ -488,7 +488,7 @@ paths:
     post:
       tags:
       - Flight
-      summary: Send command to abort taking off or landing
+      summary: Abort take off or landing
       responses:
         200:
           $ref: '#/components/responses/CommandSuccess'
@@ -500,7 +500,7 @@ paths:
     post:
       tags:
       - Flight
-      summary: Set Kite target altitude
+      summary: Set target altitude
       requestBody:
         required: true
         content:
@@ -510,10 +510,10 @@ paths:
               description: Set Kite target altitude data
               properties:
                 altitude:
-                  description: 'Target Kite altitude above the Ground Station (meters).
-                    Must not be lower than Kite takeoff altitude + 1 meter. But lower
-                    than both `altitude_hard_limit` and `altitude_soft_limit`. Note:
-                    there is always a margin of error between the `altitude_target`
+                  description: 'Sets target Kite altitude above the Ground Station
+                    (meters). Must not be lower than Kite takeoff altitude + 1 meter.
+                    But lower than both altitude_hard_limit and altitude_soft_limit.
+                    Note: there is always a margin of error between the altitude_target
                     and the altitude the Kite will take. And this error is not a constant.
 
                     '
@@ -533,11 +533,8 @@ paths:
     post:
       tags:
       - Flight
-      summary: Rotate the Kite by the angle specified (change its heading)
-      description: 'Rotate the Kite by the angle specified (change its heading) for
-        the time specified. To immediately stop Kite rotation send `rotate_kite_with_speed`
-        command with 0 speed. Note: there is always a margin of error in rotation
-        speed and total rotation angle can not be equal to `speed * duration`.
+      summary: Rotate by angle
+      description: 'Rotate the Kite by the angle specified (change its heading).
 
         '
       requestBody:
@@ -559,7 +556,7 @@ paths:
     post:
       tags:
       - Flight
-      summary: Rotate the Kite with the angle speed specified (change its heading)
+      summary: Rotate with speed
       description: 'Rotate the Kite with the angle speed specified (change its heading).
         To immediately stop Kite rotation send the same command with 0 speed.
 
@@ -583,10 +580,8 @@ paths:
     post:
       tags:
       - Flight
-      summary: Rotate the Kite (set Kite heading) to the heading specified.
-      description: 'Rotate the Kite (set Kite heading) to the heading specified. To
-        immediately stop Kite rotation send `rotate_kite_with_speed` command with
-        0 speed.
+      summary: Rotate to angle
+      description: 'Rotate the Kite (set Kite heading) to the heading specified.
 
         '
       requestBody:
@@ -594,7 +589,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RotateKiteToHeadingCommand'
+              $ref: '#/components/schemas/RotateKiteToAngleCommand'
       responses:
         200:
           $ref: '#/components/responses/CommandSuccess'
@@ -610,8 +605,8 @@ paths:
     put:
       tags:
       - Flight
-      summary: Set the Kite flight soft limits.
-      description: 'Update the Kite''s flight soft limits. If the Kite is airborne
+      summary: Set flight soft limits
+      description: 'Sets or updates the Kite flight soft limits. If the Kite is airborne
         at an altitude above the new soft limit, it will automatically descend to
         comply with the new limit. Note: this value resets on system reboot.
 
@@ -1137,7 +1132,7 @@ components:
       - Offline
     System:
       type: object
-      description: Represents the system information
+      description: Represents system information
       required:
       - gs_name
       - gs_mac
@@ -1151,7 +1146,7 @@ components:
       - boards
       properties:
         gs_name:
-          description: The identity of the ground station
+          description: Identity of the Ground Station
           type: string
           example: G001ZH
         gs_mac:
@@ -1159,32 +1154,31 @@ components:
           type: string
           example: 00:11:22:33:44:55
         kite_name:
-          description: The name of the kite. (Sticker on the kite)
+          description: Name of the Kite
           type: string
           example: K2020MF
         rtb_name:
-          description: The name of the RTB (Roof Top Box)
+          description: Name of the Rooftop Box (RTB)
           type: string
           example: R001ND
         installation:
-          description: The type of installation. (RTB, DevKit, Transport Case, Tray
-            Mount)
+          description: Type of installation (RTB, Transport Case, Tray Mount, DevKit)
           type: string
           example: RTB
         model:
-          description: The model/generation of the system. (e.g. "Sigma", "Gamma")
+          description: Model/generation of the Fotokite system
           type: string
           example: Sigma
         timezone:
-          description: The timezone of the system.
+          description: Timezone of the Fotokite system
           type: string
           example: Europe/Zurich
         timezone_name_short:
-          description: The short name of the timezone.
+          description: Short name of the timezone
           type: string
           example: CEST
         timezone_offset:
-          description: The offset of the timezone.
+          description: Offset of the timezone
           type: string
           example: +02:00
         boards:
@@ -1204,17 +1198,14 @@ components:
           description: Available system board names
           example: GMC
         id:
-          description: 'The unique identifier of the board. (e.g. "001111211136511134311FFF")
+          description: 'Unique identifier of a system board (e.g. "001111211136511134311FFF")
 
             '
           type: string
           example: 001111211136511134311FFF
     SystemDynamicInfo:
       type: object
-      description: 'System dynamic information. System dynamic information contains
-        the data that does not change as often as flight information and also may
-        not be so interesting. A property is not presented if it could not be gathered
-        (due to a hardware issue for example)
+      description: 'Represents frequently changing system information
 
         '
       properties:
@@ -1263,9 +1254,9 @@ components:
         gs_gps_accuracy: 0.31
     RTBLidsState:
       type: string
-      description: "Rooftop box lids state. Presented only when GS has lids.\n  *\
-        \ `Closed` - Lids are closed\n  * `Opening` - Lids are opening\n  * `Opened`\
-        \ - Lids are opened\n  * `Closing` - Lids are closing\n"
+      description: 'Rooftop Box (RTB) lids state
+
+        '
       enum:
       - Closed
       - Opening
@@ -1589,7 +1580,7 @@ components:
       - message
       properties:
         code:
-          description: Notification code.
+          description: Notification code
           type: integer
           example: 10032
         severity:
@@ -1597,19 +1588,17 @@ components:
           description: Notification severity
           example: Warning
         message:
-          description: Notification message. This is a human-readable message of the
-            notification. It may contain parameters that are used in the notification
-            texts.
+          description: Description message
           type: string
-          example: Kite backup battery temperature is too high
+          example: Ground Station battery temperature problem.
         system_reaction:
-          description: 'System reaction to the event.
+          description: 'System reaction message
 
             '
           type: string
           example: The temperature is too high to fly.
         instructions:
-          description: 'Instructions for the operator.
+          description: 'User instructions message
 
             '
           type: string
@@ -1705,7 +1694,7 @@ components:
       - Fatal
     TakeoffAltitude:
       type: object
-      description: Kite takeoff altitude.
+      description: Kite takeoff altitude
       properties:
         altitude:
           description: Kite takeoff altitude (meters). Property is not presented when
@@ -1720,7 +1709,7 @@ components:
       properties:
         angle:
           description: Rotate the Kite by the angle specified. Positive value - rotate
-            clockwise (degrees)
+            clockwise (degrees).
           type: number
           minimum: -360
           maximum: 360
@@ -1745,15 +1734,15 @@ components:
           minimum: 0.1
           maximum: 10
       example:
-        speed: 30
+        speed: 20
         duration: 5
-    RotateKiteToHeadingCommand:
+    RotateKiteToAngleCommand:
       type: object
       description: Rotate Kite to heading command data
       required:
-      - heading
+      - angle
       properties:
-        heading:
+        angle:
           description: 'Rotate the Kite (set Kite heading) to the heading specified
             [0..+360) (degrees). 0 North, 90 East, 180 South, 270 West.
 
@@ -1771,18 +1760,15 @@ components:
       - kite_rotation_speed_max
       properties:
         altitude_max:
-          description: 'Absolute maximum altitude the Kite can fly. Tether total length
-            or a limitation according to local regulations (meters)
+          description: 'Maximum altitude of the Fotokite system (meters).
 
             '
           type: number
         kite_rotation_speed_min:
-          description: Minimum absolute speed Kite can rotate with (to change heading)
-            (degrees/sec)
+          description: Minimum absolute rotation speed of the Kite (degrees/sec)
           type: number
         kite_rotation_speed_max:
-          description: Maximum absolute speed Kite can rotate with (to change heading)
-            (degrees/sec)
+          description: Maximum absolute rotation speed of the Kite (degrees/sec)
           type: number
       example:
         altitude_max: 45.0
@@ -1790,10 +1776,9 @@ components:
         kite_rotation_speed_max: 30.0
     FlightDynamicInfo:
       type: object
-      description: 'Important flight information. Flight information contains the
-        data that is of greatest interest and changes most frequently. A property
+      description: 'Represents frequently changing flight information. A property
         is not presented if it could not be gathered (for example due to a magnetometer
-        or a GPS issue). Note: there is always a margin of error between the `altitude_target`
+        or a GPS issue). Note: there is always a margin of error between the altitude_target
         and the altitude the Kite will take. And this error is not a constant.
 
         '
@@ -1803,29 +1788,28 @@ components:
         flight_state:
           $ref: '#/components/schemas/FlightState'
         altitude:
-          description: Current kite altitude above the Ground Station (meters)
+          description: Current Kite altitude above the Ground Station (meters)
           type: number
           minimum: 0
         altitude_target:
-          description: Target Kite altitude set by user or autopilot (meters)
+          description: Target Kite altitude set by the user (meters)
           type: number
           minimum: 0
         kite_heading:
-          description: Kite heading (not to be confused with camera heading) [0..360)
-            (degrees)
+          description: Kite heading [0..+360) (degrees)
           type: number
           minimum: 0
           maximum: 360
           exclusiveMaximum: true
         is_rotating:
           description: 'Whether Kite is rotating (changing heading) as a result of
-            the rotation command. true - Kite is rotating
+            the rotation command. True - Kite is rotating
 
             '
           type: boolean
         is_changing_altitude:
           description: 'Whether Kite is changing altitude as a result of the set altitude
-            command. true - Kite is changing altitude
+            command. True - Kite is changing altitude
 
             '
           type: boolean
@@ -1860,7 +1844,7 @@ components:
         kite_gps_accuracy: 0.23
     FlightState:
       type: string
-      description: "Flight state enumeration.\n  * `Unknown` - We couldn't get required\
+      description: "Flight state enumeration\n  * `Unknown` - We couldn't get required\
         \ data to conclude flight sate. This may happen due to numerous reasons:\n\
         \    Kite detached, Kite power is off, etc. More information can be found\
         \ in notifications.\n  * `StandBy` - Kite is on the Ground Station\n  * `TakingOff`\
@@ -1885,8 +1869,8 @@ components:
       - altitude_max
       properties:
         altitude_max:
-          description: 'Kite maximum altitude soft limit set by an operator (meters).
-            Must be between Kite 1m and `altitude_hard_limit`. This value resets on
+          description: 'Maximum altitude the Kite can fly if soft limit has been set
+            in Fotokite Live by the user or the API (meters). This value resets on
             system reboot.
 
             '
