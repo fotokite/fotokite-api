@@ -40,22 +40,14 @@ def dictionary() -> dict[str, object]:
 def notifications_telemetry(
     on_message_callback: Callable[[Notification], None],
     max_messages: int | None = None,
-    from_time: str | None = None,
 ) -> None:
     """Subscribes to notifications telemetry.
 
     Args:
         on_message_callback: A callback function to handle incoming messages.
         max_messages: The maximum number of messages to process. Defaults to None.
-        from_time: The starting time for fetching messages. Defaults to None.
     """
-    if from_time is None:
-        now = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
-        from_time = now
-
     ws_url = f"{BASE_WEBSOCKET_API_URL}/telemetry/notifications/subscribe"
-    if from_time is not None:
-        ws_url += f"?from_time={from_time}"
     try:
         with connect(ws_url) as websocket:
             logging.info("Connected to notifications telemetry")

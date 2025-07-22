@@ -60,7 +60,7 @@ def start_gstreamer(rtsp_url: str, hls_dir: str) -> subprocess.Popen[bytes]:
         "!",
         "mpegtsmux",
         "!",
-        f"hlssink",
+        "hlssink",
         f"location={hls_dir}/segment%05d.ts",
         f"playlist-location={playlist_path}",
         "target-duration=2",
