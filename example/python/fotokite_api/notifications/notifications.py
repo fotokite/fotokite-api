@@ -38,24 +38,16 @@ def dictionary() -> dict[str, object]:
 
 
 def notifications_telemetry(
-    on_message_callback: Callable[[dict[str, list[Notification]]], None],
+    on_message_callback: Callable[[Notification], None],
     max_messages: int | None = None,
-    from_time: str | None = None,
 ) -> None:
     """Subscribes to notifications telemetry.
 
     Args:
         on_message_callback: A callback function to handle incoming messages.
         max_messages: The maximum number of messages to process. Defaults to None.
-        from_time: The starting time for fetching messages. Defaults to None.
     """
-    if from_time is None:
-        now = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
-        from_time = now
-
     ws_url = f"{BASE_WEBSOCKET_API_URL}/telemetry/notifications/subscribe"
-    if from_time is not None:
-        ws_url += f"?from_time={from_time}"
     try:
         with connect(ws_url) as websocket:
             logging.info("Connected to notifications telemetry")
@@ -72,8 +64,8 @@ def notifications_telemetry(
         logging.error(f"Error in notifications telemetry: {e}")
 
 
-def _handle_notifications(message: dict[str, list[Notification]]) -> None:
-    """Processes a dictionary of notifications, updating the global notifications store.
+def _handle_notification(message: Notification) -> None:
+    """Processes a notification, updating the global notifications store.
 
     For each notification in the input message:
     - If the notification has an 'end_time', it removes the notification from the global store.
@@ -82,19 +74,18 @@ def _handle_notifications(message: dict[str, list[Notification]]) -> None:
     Used to keep track of current notifications and their statuses.
 
     Args:
-        message: A dictionary containing a list of notifications under the "notifications" key.
+        message: A dictionary representing a notification message.
     """
-    for notification in message.get("notifications", []):
-        identifier = f"{notification.get("code")}_{notification.get("begin_time")}"
-        end_time = notification.get("end_time")
+    identifier = f"{message.get("code")}_{message.get("begin_time")}"
+    end_time = message.get("end_time")
 
-        if end_time:
-            try:
-                del notifications[identifier]
-            except KeyError:
-                pass
-        else:
-            notifications[identifier] = notification
+    if end_time:
+        try:
+            del notifications[identifier]
+        except KeyError:
+            pass
+    else:
+        notifications[identifier] = message
 
 
 def log_notifications() -> None:
@@ -116,7 +107,7 @@ def start_telemetry_with_logging() -> None:
     logging_thread = threading.Thread(target=log_notifications, daemon=True)
     logging_thread.start()
     # Start telemetry listening
-    notifications_telemetry(_handle_notifications)
+    notifications_telemetry(_handle_notification)
 
 
 if __name__ == "__main__":
