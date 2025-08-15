@@ -3,7 +3,7 @@ info:
   title: Fotokite API
   description: Allows access to all Fotokite Sigma functionality from a single entry
     point.
-  version: 0.0.1
+  version: 0.2.0
 servers:
 - url: http://192.168.2.100:3128/api
   description: API service running on the system
@@ -29,6 +29,20 @@ paths:
               schema:
                 type: string
                 example: Service Unavailable
+  /v0/version:
+    get:
+      tags:
+      - Health
+      summary: Get the api spec version
+      description: Returns the percise version number of the Fotokite API, e.g. for
+        feature detection. The returned value is a semver-compliant version number.
+      responses:
+        200:
+          description: Version Number
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpecFileVersion'
   /v0/info/system:
     get:
       tags:
@@ -508,6 +522,8 @@ paths:
             schema:
               type: object
               description: Set Kite target altitude data
+              required:
+              - altitude
               properties:
                 altitude:
                   description: 'Sets target Kite altitude above the Ground Station
@@ -576,6 +592,8 @@ paths:
           $ref: '#/components/responses/ControlCommandBlocked'
         409:
           $ref: '#/components/responses/NotAllowedInCurrentState'
+        503:
+          $ref: '#/components/responses/ServiceUnavailable'
   /v0/commands/flight/rotate_to_angle:
     post:
       tags:
@@ -602,7 +620,7 @@ paths:
         503:
           $ref: '#/components/responses/ServiceUnavailable'
   /v0/commands/flight/set_soft_limits:
-    put:
+    post:
       tags:
       - Flight
       summary: Set flight soft limits
@@ -806,6 +824,19 @@ paths:
           $ref: '#/components/responses/ControlCommandBlocked'
         507:
           $ref: '#/components/responses/InsufficientStorage'
+  /v0/software/version:
+    get:
+      tags:
+      - Software
+      summary: Get software version
+      description: Returns the software channel and release version of the system.
+      responses:
+        200:
+          description: Software version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SoftwareVersion'
   /v0/{category}/{endpoint}/subscribe:
     post:
       tags:
@@ -1107,6 +1138,18 @@ components:
           schema:
             $ref: '#/components/schemas/System'
   schemas:
+    SpecFileVersion:
+      type: object
+      description: SemVer version number of the Fotokite API.
+      required:
+      - version
+      properties:
+        version:
+          description: The version number
+          type: string
+          example: 1.0.1
+          x-oapi-codegen-extra-tags:
+            fk-default: 0.2.0
     Error:
       type: object
       description: A generic error object.
@@ -1224,6 +1267,9 @@ components:
           type: number
         rtb_lids_state:
           $ref: '#/components/schemas/RTBLidsState'
+        gs_gps_has_fix:
+          description: Whether the data reported by the Ground Station GPS is useable
+          type: boolean
         gs_gps_lat:
           description: Latitude reported by Ground Station GPS [-90..+90] (degrees)
           type: number
@@ -1248,6 +1294,7 @@ components:
         gs_battery_level: 98
         gs_input_voltage: 112
         rtb_lids_state: Opened
+        gs_gps_has_fix: true
         gs_gps_lat: 47.3883959
         gs_gps_lon: 8.5229581
         gs_gps_elevation: 403
@@ -1813,6 +1860,9 @@ components:
 
             '
           type: boolean
+        kite_gps_has_fix:
+          description: Whether the data reported by the Kite GPS is useable
+          type: boolean
         kite_gps_lat:
           description: Latitude reported by Kite GPS [-90..+90] (degrees)
           type: number
@@ -1838,6 +1888,7 @@ components:
         kite_heading: 98
         is_rotating: false
         is_changing_altitude: true
+        kite_gps_has_fix: true
         kite_gps_lat: 47.3883959
         kite_gps_lon: 8.5229581
         kite_gps_elevation: 443
@@ -1964,3 +2015,18 @@ components:
           type: integer
           format: int64
           minimum: 0
+    SoftwareVersion:
+      type: object
+      description: Represents software version information
+      required:
+      - channel
+      - version
+      properties:
+        channel:
+          type: string
+          description: Software channel (e.g., production, beta)
+          example: production
+        version:
+          type: string
+          description: Software release version number
+          example: '59'
