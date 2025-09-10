@@ -6,14 +6,35 @@ from typing import Callable, cast
 import requests
 from websockets.sync.client import connect
 
-from fotokite_api.utils import BASE_REST_API_URL, BASE_WEBSOCKET_API_URL, retrieve_auth_token, API_KEY
+from fotokite_api.utils import (
+    API_KEY,
+    BASE_REST_API_URL,
+    BASE_WEBSOCKET_API_URL,
+    retrieve_auth_token,
+)
 
 SystemMessage = dict[str, object]
 
 
 def system_info(access_token: str = "") -> SystemMessage:
+    """Fetches system information.
+
+    Args:
+        access_token: Bearer token for API authentication. Defaults to "".
+
+    Returns:
+        Parsed system information message if the request is successful.
+        Empty dictionary if an error occurs.
+
+    Raises:
+        requests.HTTPError: If the HTTP request fails with a non-200 status code.
+        Exception: For any other exceptions encountered during the request.
+    """
     try:
-        response = requests.get(f"{BASE_REST_API_URL}/info/system", headers={"Authorization": f"Bearer {access_token}"})
+        response = requests.get(
+            f"{BASE_REST_API_URL}/info/system",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
         if response.status_code == 200:
             return cast(SystemMessage, response.json())
         else:
@@ -26,12 +47,21 @@ def system_info(access_token: str = "") -> SystemMessage:
 
 def system_telemetry(
     on_message_callback: Callable[[SystemMessage], None],
+    access_token: str = "",
     max_messages: int | None = None,
-    access_token: str = ""
 ) -> None:
+    """Subscribes to system info telemetry
+
+    Args:
+        on_message_callback: A callback function to handle incoming messages.
+        access_token: The authentication token to use in the websocket connection.
+        max_messages: The maximum number of messages to process. Defaults to None.
+    """
     ws_url = f"{BASE_WEBSOCKET_API_URL}/telemetry/system/subscribe?access_token={access_token}"
     try:
-        with connect(ws_url, additional_headers={"Authorization": f"Bearer {access_token}"}) as websocket:
+        with connect(
+            ws_url, additional_headers={"Authorization": f"Bearer {access_token}"}
+        ) as websocket:
             logging.info("Connected to system telemetry")
             count = 0
             while True:
@@ -75,4 +105,4 @@ if __name__ == "__main__":
         info = system_info(auth_token)
         logging.info("System Info:\n%s", json.dumps(info, indent=2))
     elif args.action == "telemetry":
-        system_telemetry(_handle_telemetry, None, auth_token)
+        system_telemetry(_handle_telemetry, auth_token)
