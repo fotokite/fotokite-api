@@ -34,6 +34,10 @@ run_notifications:
 	poetry install
 	poetry run python -m fotokite_api.notifications.notifications --action=$(action)
 
+run_camera:
+	poetry install
+	poetry run python -m fotokite_api.camera.camera --action=$(action)
+
 run_demo_flight:
 	poetry install
 	poetry run python -m fotokite_api.demo_flight

@@ -126,13 +126,13 @@ def handle_flight(data: dict[str, object], access_token: str) -> None:
 
     elif not state["first_rotation"] and not is_changing_altitude:
         logging.info("Rotating by 180 degrees.")
-        if rotate_by_angle(access_token, 180.0):
+        if rotate_by_angle(access_token, 180, 0):
             logging.info("Rotation command (180 deg) sent.")
             state["first_rotation"] = True
 
     elif not state["second_rotation"] and not is_rotating and not is_changing_altitude:
         logging.info("Rotating back by -180 degrees.")
-        if rotate_by_angle(access_token, -180.0):
+        if rotate_by_angle(access_token, -180, 0):
             logging.info("Rotation command (-180 deg) sent.")
             state["second_rotation"] = True
 

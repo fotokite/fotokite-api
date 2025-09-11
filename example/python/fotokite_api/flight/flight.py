@@ -186,27 +186,32 @@ def set_altitude(altitude: float, access_token: str) -> bool:
     return False
 
 
-def rotate_by_angle(access_token: str, angle: float = 90) -> bool:
+def rotate_by_angle(access_token: str, pan: float = 0.0, tilt: float = 0.0) -> bool:
     """Sends a rotate by angle command to the Ground Station.
 
     Args:
-        angle (float): The angle to rotate the Kite.
+        pan: The pan angle to rotate the Kite's camera.
+        tilt: The tilt angle to rotate the Kite's camera.
         access_token: The authentication token to use in the request.
 
     Returns:
         True if the command was sent successfully, False otherwise.
-        This command rotates the Kite by the specified angle. The angle should be between -360 and 360 degrees.
-        Positive values indicate clockwise rotation, while negative values indicate counter-clockwise rotation.
+        This command rotates the Kite's camera by the specified pan and tilt angles.
+        Pan and tilt should be between -180 and 180 degrees.
+        Positive values indicate clockwise/upward rotation, negative values indicate counter-clockwise/downward.
     """
     try:
-        if angle < -360 or angle > 360:
-            logging.error("Angle must be between -360 and 360 degrees.")
+        if not (-180 <= pan <= 180) or not (-180 <= tilt <= 180):
+            logging.error("Pan and tilt must be between -180 and 180 degrees.")
             return False
 
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
-            f"{BASE_REST_API_URL}/commands/flight/rotate_by_angle",
-            json={"angle": angle},
+            f"{BASE_REST_API_URL}/commands/camera/rotate_by_angle",
+            json={
+                "pan": pan,
+                "tilt": tilt,
+            },
             headers=headers,
         )
         if response.status_code == 200:
@@ -251,7 +256,7 @@ def flight_telemetry(
         logging.error(f"Error in flight telemetry: {e}")
 
 
-def wait_for(state: str) -> None:
+def wait_for(access_token: str, state: str) -> None:
     """Subscribes to telemetry updates and waits for the System to settle on a
     given state (that is, wait for a previous command to be executed).
 
@@ -272,7 +277,7 @@ def wait_for(state: str) -> None:
         else:
             logging.info("state is still %s not %s...", args["flight_state"], state)
 
-    flight_telemetry(check)
+    flight_telemetry(check, access_token)
 
 
 if __name__ == "__main__":
@@ -314,6 +319,7 @@ if __name__ == "__main__":
             ),
             access_token=access_token,
         ),
+        "take_off": take_off,
         "land": land,
         "abort": abort,
         "set_altitude": lambda access_token: set_altitude(1, access_token),
