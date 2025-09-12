@@ -14,6 +14,7 @@ from fotokite_api.flight.flight import (
 )
 from fotokite_api.notifications.notifications import start_telemetry_with_logging
 from fotokite_api.system.system import system_info, system_telemetry
+from fotokite_api.utils import API_KEY, retrieve_auth_token
 
 
 class FlightState(TypedDict):
@@ -50,14 +51,20 @@ def demo_flight() -> None:
     """
     logging.basicConfig(level=logging.INFO)
 
+    # Retrieve an access token
+    access_token = retrieve_auth_token(API_KEY)
+    if access_token is None:
+        logging.error("Failed to retrieve authentication token. Exiting.")
+        return
+
     # Identify the system
-    info = system_info()
+    info = system_info(access_token)
     logging.info("System Info:\n%s", json.dumps(info, indent=2))
 
     # Start telemetry threads
     flight_thread = threading.Thread(
         target=flight_telemetry,
-        args=(handle_flight,),
+        args=(handle_flight, access_token),
         daemon=True,
     )
     flight_thread.start()
@@ -68,6 +75,7 @@ def demo_flight() -> None:
             lambda data: logging.info(
                 "System Telemetry:\n%s", json.dumps(data, indent=2)
             ),
+            access_token,
         ),
         daemon=True,
     )
@@ -75,6 +83,7 @@ def demo_flight() -> None:
 
     notifications_thread = threading.Thread(
         target=start_telemetry_with_logging,
+        args=(access_token,),
         daemon=True,
     )
     notifications_thread.start()
@@ -82,11 +91,11 @@ def demo_flight() -> None:
     # Allow telemetry to start
     time.sleep(2)
 
-    if take_off():
+    if take_off(access_token):
         logging.info("Takeoff command sent.")
     else:
         logging.error("Takeoff failed. Aborting mission.")
-        abort()
+        abort(access_token)
         return
 
     # Keep the main thread alive to process telemetry updates
@@ -97,7 +106,7 @@ def demo_flight() -> None:
     time.sleep(10)
 
 
-def handle_flight(data: dict[str, object]) -> None:
+def handle_flight(data: dict[str, object], access_token: str) -> None:
     """Handles flight telemetry data and executes flight commands based on the current flight state."""
 
     logging.info("Flight Telemetry:\n%s", json.dumps(data, indent=2))
@@ -111,25 +120,25 @@ def handle_flight(data: dict[str, object]) -> None:
 
     if not state["altitude_changed"]:
         logging.info("Setting altitude to 2 meters.")
-        if set_altitude(2):
+        if set_altitude(2, access_token):
             logging.info("Altitude set command sent.")
             state["altitude_changed"] = True
 
     elif not state["first_rotation"] and not is_changing_altitude:
         logging.info("Rotating by 180 degrees.")
-        if rotate_by_angle(180.0):
+        if rotate_by_angle(access_token, 180.0):
             logging.info("Rotation command (180 deg) sent.")
             state["first_rotation"] = True
 
     elif not state["second_rotation"] and not is_rotating and not is_changing_altitude:
         logging.info("Rotating back by -180 degrees.")
-        if rotate_by_angle(-180.0):
+        if rotate_by_angle(access_token, -180.0):
             logging.info("Rotation command (-180 deg) sent.")
             state["second_rotation"] = True
 
     elif not state["landing"] and not is_rotating and not is_changing_altitude:
         logging.info("Landing now.")
-        if land():
+        if land(access_token):
             logging.info("Landing command sent.")
             state["landing"] = True
 

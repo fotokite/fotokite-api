@@ -8,14 +8,22 @@ from typing import Callable, cast
 import requests
 from websockets.sync.client import connect
 
-from fotokite_api.utils import BASE_REST_API_URL, BASE_WEBSOCKET_API_URL
+from fotokite_api.utils import (
+    API_KEY,
+    BASE_REST_API_URL,
+    BASE_WEBSOCKET_API_URL,
+    retrieve_auth_token,
+)
 
 Notification = dict[str, str]
 notifications: dict[str, Notification] = {}
 
 
-def dictionary() -> dict[str, object]:
+def dictionary(access_token: str) -> dict[str, object]:
     """Fetches the notifications dictionary.
+
+    Args:
+        access_token: The authentication token to use in the request.
 
     Returns:
         A dictionary containing notification definitions with their codes and descriptions.
@@ -26,7 +34,10 @@ def dictionary() -> dict[str, object]:
         Exception: For any other exceptions encountered during the request.
     """
     try:
-        response = requests.get(f"{BASE_REST_API_URL}/info/notifications/dictionary")
+        headers = {"Authorization": f"Bearer {access_token}"}
+        response = requests.get(
+            f"{BASE_REST_API_URL}/info/notifications/dictionary", headers=headers
+        )
         if response.status_code == 200:
             return cast(dict[str, object], response.json())
         else:
@@ -39,17 +50,21 @@ def dictionary() -> dict[str, object]:
 
 def notifications_telemetry(
     on_message_callback: Callable[[Notification], None],
+    access_token: str,
     max_messages: int | None = None,
 ) -> None:
     """Subscribes to notifications telemetry.
 
     Args:
         on_message_callback: A callback function to handle incoming messages.
+        access_token: The authentication token to use in the websocket connection.
         max_messages: The maximum number of messages to process. Defaults to None.
     """
     ws_url = f"{BASE_WEBSOCKET_API_URL}/telemetry/notifications/subscribe"
     try:
-        with connect(ws_url) as websocket:
+        with connect(
+            ws_url, additional_headers={"Authorization": f"Bearer {access_token}"}
+        ) as websocket:
             logging.info("Connected to notifications telemetry")
             count = 0
             while True:
@@ -65,18 +80,8 @@ def notifications_telemetry(
 
 
 def _handle_notification(message: Notification) -> None:
-    """Processes a notification, updating the global notifications store.
-
-    For each notification in the input message:
-    - If the notification has an 'end_time', it removes the notification from the global store.
-    - Otherwise, it adds or updates the notification in the global store using a unique identifier.
-    - The identifier is constructed from the notification's 'code' and 'begin_time'.
-    Used to keep track of current notifications and their statuses.
-
-    Args:
-        message: A dictionary representing a notification message.
-    """
-    identifier = f"{message.get("code")}_{message.get("begin_time")}"
+    """Processes a notification, updating the global notifications store."""
+    identifier = f"{message.get('code')}_{message.get('begin_time')}"
     end_time = message.get("end_time")
 
     if end_time:
@@ -89,11 +94,7 @@ def _handle_notification(message: Notification) -> None:
 
 
 def log_notifications() -> None:
-    """Periodically logs the current notifications every 5 seconds.
-
-    This function runs an infinite loop, checking for the presence of notifications.
-    If notifications are available, it logs them; otherwise, it logs that there are no notifications.
-    """
+    """Periodically logs the current notifications every 5 seconds."""
     while True:
         time.sleep(5)
         if notifications:
@@ -102,12 +103,12 @@ def log_notifications() -> None:
             logging.info("No notifications at the moment")
 
 
-def start_telemetry_with_logging() -> None:
+def start_telemetry_with_logging(access_token: str) -> None:
     # Start the logger in a separate thread
     logging_thread = threading.Thread(target=log_notifications, daemon=True)
     logging_thread.start()
     # Start telemetry listening
-    notifications_telemetry(_handle_notification)
+    notifications_telemetry(_handle_notification, access_token)
 
 
 if __name__ == "__main__":
@@ -125,13 +126,20 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    actions: dict[str, Callable[[], object]] = {
-        "dictionary": lambda: logging.info(f"Notifications Dictionary: {dictionary()}"),
+    actions: dict[str, Callable[[str], object]] = {
+        "dictionary": lambda access_token: logging.info(
+            f"Notifications Dictionary: {dictionary(access_token)}"
+        ),
         "telemetry": start_telemetry_with_logging,
     }
 
+    auth_token = retrieve_auth_token(API_KEY)
+    if auth_token is None:
+        logging.error("Failed to retrieve authentication token. Exiting.")
+        exit(1)
+
     action = actions.get(args.action)
     if action:
-        action()
+        action(auth_token)
     else:
         logging.error("Invalid action selected. Please choose a valid option.")

@@ -6,11 +6,19 @@ from typing import Callable, cast
 import requests
 from websockets.sync.client import connect
 
-from fotokite_api.utils import BASE_REST_API_URL, BASE_WEBSOCKET_API_URL
+from fotokite_api.utils import (
+    API_KEY,
+    BASE_REST_API_URL,
+    BASE_WEBSOCKET_API_URL,
+    retrieve_auth_token,
+)
 
 
-def hard_limits() -> dict[str, object]:
+def hard_limits(access_token: str) -> dict[str, object]:
     """Fetches the hard flight limits of the Kite.
+
+    Args:
+        access_token: The authentication token to use in the request.
 
     Returns:
         A dictionary containing the hard flight limits if the request is successful.
@@ -20,7 +28,10 @@ def hard_limits() -> dict[str, object]:
         requests.HTTPError: If the response status code is not 200 and an HTTP error occurs.
     """
     try:
-        response = requests.get(f"{BASE_REST_API_URL}/info/flight/hard_limits")
+        headers = {"Authorization": f"Bearer {access_token}"}
+        response = requests.get(
+            f"{BASE_REST_API_URL}/info/flight/hard_limits", headers=headers
+        )
         if response.status_code == 200:
             return cast(dict[str, object], response.json())
         else:
@@ -31,8 +42,11 @@ def hard_limits() -> dict[str, object]:
     return {}
 
 
-def takeoff_altitude() -> dict[str, object]:
+def takeoff_altitude(access_token: str) -> dict[str, object]:
     """Fetches the takeoff altitude of the Kite.
+
+    Args:
+        access_token: The authentication token to use in the request.
 
     Returns:
         A dictionary containing the takeoff altitude information if the request is successful.
@@ -44,7 +58,10 @@ def takeoff_altitude() -> dict[str, object]:
 
     """
     try:
-        response = requests.get(f"{BASE_REST_API_URL}/info/flight/takeoff_altitude")
+        headers = {"Authorization": f"Bearer {access_token}"}
+        response = requests.get(
+            f"{BASE_REST_API_URL}/info/flight/takeoff_altitude", headers=headers
+        )
         if response.status_code == 200:
             return cast(dict[str, object], response.json())
         else:
@@ -55,8 +72,11 @@ def takeoff_altitude() -> dict[str, object]:
     return {}
 
 
-def take_off() -> bool:
+def take_off(access_token: str) -> bool:
     """Sends a take off command to the Ground Station.
+
+    Args:
+        access_token: The authentication token to use in the request.
 
     Returns:
         True if the take off command was sent successfully (HTTP 200), False otherwise.
@@ -64,7 +84,10 @@ def take_off() -> bool:
         To check if the Kite has taken off, monitor the flight telemetry.
     """
     try:
-        response = requests.post(f"{BASE_REST_API_URL}/commands/flight/take_off")
+        headers = {"Authorization": f"Bearer {access_token}"}
+        response = requests.post(
+            f"{BASE_REST_API_URL}/commands/flight/take_off", headers=headers
+        )
         if response.status_code == 200:
             logging.info("Take off command sent successfully.")
             return True
@@ -76,8 +99,11 @@ def take_off() -> bool:
     return False
 
 
-def land() -> bool:
+def land(access_token: str) -> bool:
     """Sends a land command to the Ground Station.
+
+    Args:
+        access_token: The authentication token to use in the request.
 
     Returns:
         True if the land command was sent successfully (HTTP 200), False otherwise.
@@ -85,7 +111,10 @@ def land() -> bool:
         To check if the Kite has landed, monitor the flight telemetry.
     """
     try:
-        response = requests.post(f"{BASE_REST_API_URL}/commands/flight/land")
+        headers = {"Authorization": f"Bearer {access_token}"}
+        response = requests.post(
+            f"{BASE_REST_API_URL}/commands/flight/land", headers=headers
+        )
         if response.status_code == 200:
             logging.info("Land command sent successfully.")
             return True
@@ -97,8 +126,11 @@ def land() -> bool:
     return False
 
 
-def abort() -> bool:
+def abort(access_token: str) -> bool:
     """Sends an abort command to the Ground Station.
+
+    Args:
+        access_token: The authentication token to use in the request.
 
     Returns:
         True if the abort command was sent successfully (HTTP 200), False otherwise.
@@ -107,7 +139,10 @@ def abort() -> bool:
         ongoing flight commands.
     """
     try:
-        response = requests.post(f"{BASE_REST_API_URL}/commands/flight/abort")
+        headers = {"Authorization": f"Bearer {access_token}"}
+        response = requests.post(
+            f"{BASE_REST_API_URL}/commands/flight/abort", headers=headers
+        )
         if response.status_code == 200:
             logging.info("Abort command sent successfully.")
             return True
@@ -120,11 +155,12 @@ def abort() -> bool:
     return False
 
 
-def set_altitude(altitude: float) -> bool:
+def set_altitude(altitude: float, access_token: str) -> bool:
     """Sends a set altitude command to the Ground Station.
 
     Args:
         altitude: The target altitude to set.
+        access_token: The authentication token to use in the request.
 
     Returns:
         True if the set altitude command was sent successfully (HTTP 200), False otherwise.
@@ -132,9 +168,11 @@ def set_altitude(altitude: float) -> bool:
         will reach that altitude immediately. Monitor the flight telemetry to confirm altitude changes.
     """
     try:
+        headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
             f"{BASE_REST_API_URL}/commands/flight/set_altitude",
             json={"altitude": altitude},
+            headers=headers,
         )
         if response.status_code == 200:
             logging.info("Set altitude command sent successfully.")
@@ -148,11 +186,12 @@ def set_altitude(altitude: float) -> bool:
     return False
 
 
-def rotate_by_angle(angle: float = 90) -> bool:
+def rotate_by_angle(access_token: str, angle: float = 90) -> bool:
     """Sends a rotate by angle command to the Ground Station.
 
     Args:
         angle (float): The angle to rotate the Kite.
+        access_token: The authentication token to use in the request.
 
     Returns:
         True if the command was sent successfully, False otherwise.
@@ -164,9 +203,11 @@ def rotate_by_angle(angle: float = 90) -> bool:
             logging.error("Angle must be between -360 and 360 degrees.")
             return False
 
+        headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
             f"{BASE_REST_API_URL}/commands/flight/rotate_by_angle",
             json={"angle": angle},
+            headers=headers,
         )
         if response.status_code == 200:
             logging.info("Rotate by angle command sent successfully.")
@@ -182,17 +223,21 @@ def rotate_by_angle(angle: float = 90) -> bool:
 
 def flight_telemetry(
     on_message_callback: Callable[[dict[str, object]], None],
+    access_token: str = "",
     max_messages: int | None = None,
 ) -> None:
     """Subscribes to flight telemetry updates from the System.
 
     Args:
         on_message_callback: Callback function to handle incoming telemetry messages.
+        access_token: The authentication token to use in the websocket connection.
         max_messages: Maximum number of messages to receive before unsubscribing. Defaults to None(read forever).
     """
     ws_url = f"{BASE_WEBSOCKET_API_URL}/telemetry/flight/subscribe"
     try:
-        with connect(ws_url) as websocket:
+        with connect(
+            ws_url, additional_headers={"Authorization": f"Bearer {access_token}"}
+        ) as websocket:
             logging.info("Connected to flight telemetry")
             count = 0
             while True:
@@ -251,25 +296,32 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    actions: dict[str, Callable[[], object]] = {
-        "hard_limits": lambda: logging.info(f"Flight Hard Limits: {hard_limits()}"),
-        "takeoff_altitude": lambda: logging.info(
-            f"Flight Take Off Altitude: {takeoff_altitude()}"
+    access_token = retrieve_auth_token(API_KEY)
+    if not access_token:
+        logging.error("Failed to retrieve access token. Exiting.")
+        exit(1)
+
+    actions: dict[str, Callable[[str], object]] = {
+        "hard_limits": lambda access_token: logging.info(
+            f"Flight Hard Limits: {hard_limits(access_token)}"
         ),
-        "telemetry": lambda: flight_telemetry(
+        "takeoff_altitude": lambda access_token: logging.info(
+            f"Flight Take Off Altitude: {takeoff_altitude(access_token)}"
+        ),
+        "telemetry": lambda access_token: flight_telemetry(
             lambda data: logging.info(
                 "Flight telemetry:\n%s", json.dumps(data, indent=2)
-            )
+            ),
+            access_token=access_token,
         ),
-        "take_off": take_off,
         "land": land,
         "abort": abort,
-        "set_altitude": lambda: set_altitude(1),
-        "rotate_by_angle": lambda: rotate_by_angle(90.0),
+        "set_altitude": lambda access_token: set_altitude(1, access_token),
+        "rotate_by_angle": lambda access_token: rotate_by_angle(access_token, 90.0),
     }
 
     action = actions.get(args.action)
     if action:
-        action()
+        action(access_token)
     else:
         logging.error("Invalid action selected. Please choose a valid option.")
