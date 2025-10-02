@@ -10,7 +10,7 @@ API_KEY = "DemoApiKey123"
 def retrieve_auth_token(api_key: str) -> str | None:
     try:
         response = requests.post(
-            f"{BASE_REST_API_URL}/authentication/tokens/request",
+            f"{BASE_REST_API_URL}/auth/token/request",
             json={"client_secret": api_key},
         )
         if response.status_code == 200:

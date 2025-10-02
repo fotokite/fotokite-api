@@ -36,7 +36,7 @@ def dictionary(access_token: str) -> dict[str, object]:
     try:
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.get(
-            f"{BASE_REST_API_URL}/info/notifications/dictionary", headers=headers
+            f"{BASE_REST_API_URL}/notifications/dictionary", headers=headers
         )
         if response.status_code == 200:
             return cast(dict[str, object], response.json())
@@ -60,7 +60,7 @@ def notifications_telemetry(
         access_token: The authentication token to use in the websocket connection.
         max_messages: The maximum number of messages to process. Defaults to None.
     """
-    ws_url = f"{BASE_WEBSOCKET_API_URL}/telemetry/notifications/subscribe"
+    ws_url = f"{BASE_WEBSOCKET_API_URL}/notifications/subscribe"
     try:
         with connect(
             ws_url, additional_headers={"Authorization": f"Bearer {access_token}"}

@@ -14,7 +14,7 @@ from fotokite_api.utils import (
 )
 
 
-def hard_limits(access_token: str) -> dict[str, object]:
+def info(access_token: str) -> dict[str, object]:
     """Fetches the hard flight limits of the Kite.
 
     Args:
@@ -29,45 +29,13 @@ def hard_limits(access_token: str) -> dict[str, object]:
     """
     try:
         headers = {"Authorization": f"Bearer {access_token}"}
-        response = requests.get(
-            f"{BASE_REST_API_URL}/info/flight/hard_limits", headers=headers
-        )
+        response = requests.get(f"{BASE_REST_API_URL}/flight/info", headers=headers)
         if response.status_code == 200:
             return cast(dict[str, object], response.json())
         else:
             response.raise_for_status()
     except Exception as e:
         logging.error(f"Error fetching flight hard limits: {e}")
-
-    return {}
-
-
-def takeoff_altitude(access_token: str) -> dict[str, object]:
-    """Fetches the takeoff altitude of the Kite.
-
-    Args:
-        access_token: The authentication token to use in the request.
-
-    Returns:
-        A dictionary containing the takeoff altitude information if the request is successful.
-        Returns an empty dictionary if an error occurs.
-
-    Raises:
-        requests.HTTPError: If the HTTP request fails with a non-200 status code.
-        Exception: For any other exceptions encountered during the request.
-
-    """
-    try:
-        headers = {"Authorization": f"Bearer {access_token}"}
-        response = requests.get(
-            f"{BASE_REST_API_URL}/info/flight/takeoff_altitude", headers=headers
-        )
-        if response.status_code == 200:
-            return cast(dict[str, object], response.json())
-        else:
-            response.raise_for_status()
-    except Exception as e:
-        logging.error(f"Error fetching flight take off altitude: {e}")
 
     return {}
 
@@ -86,7 +54,7 @@ def take_off(access_token: str) -> bool:
     try:
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
-            f"{BASE_REST_API_URL}/commands/flight/take_off", headers=headers
+            f"{BASE_REST_API_URL}/flight/control/take_off", headers=headers
         )
         if response.status_code == 200:
             logging.info("Take off command sent successfully.")
@@ -113,7 +81,7 @@ def land(access_token: str) -> bool:
     try:
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
-            f"{BASE_REST_API_URL}/commands/flight/land", headers=headers
+            f"{BASE_REST_API_URL}/flight/control/land", headers=headers
         )
         if response.status_code == 200:
             logging.info("Land command sent successfully.")
@@ -141,7 +109,7 @@ def abort(access_token: str) -> bool:
     try:
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
-            f"{BASE_REST_API_URL}/commands/flight/abort", headers=headers
+            f"{BASE_REST_API_URL}/flight/control/abort", headers=headers
         )
         if response.status_code == 200:
             logging.info("Abort command sent successfully.")
@@ -170,7 +138,7 @@ def set_altitude(altitude: float, access_token: str) -> bool:
     try:
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
-            f"{BASE_REST_API_URL}/commands/flight/set_altitude",
+            f"{BASE_REST_API_URL}/flight/control/altitude",
             json={"altitude": altitude},
             headers=headers,
         )
@@ -207,7 +175,7 @@ def rotate_by_angle(access_token: str, pan: float = 0.0, tilt: float = 0.0) -> b
 
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
-            f"{BASE_REST_API_URL}/commands/camera/rotate_by_angle",
+            f"{BASE_REST_API_URL}/camera/control/rotate_by_angle",
             json={
                 "pan": pan,
                 "tilt": tilt,
@@ -238,7 +206,7 @@ def flight_telemetry(
         access_token: The authentication token to use in the websocket connection.
         max_messages: Maximum number of messages to receive before unsubscribing. Defaults to None(read forever).
     """
-    ws_url = f"{BASE_WEBSOCKET_API_URL}/telemetry/flight/subscribe"
+    ws_url = f"{BASE_WEBSOCKET_API_URL}/flight/state/subscribe"
     try:
         with connect(
             ws_url, additional_headers={"Authorization": f"Bearer {access_token}"}
@@ -287,8 +255,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--action",
         choices=[
-            "hard_limits",
-            "takeoff_altitude",
+            "info",
             "telemetry",
             "take_off",
             "land",
@@ -296,7 +263,7 @@ if __name__ == "__main__":
             "set_altitude",
             "rotate_by_angle",
         ],
-        default="hard_limits",
+        default="info",
         help="Choose which action to trigger",
     )
     args = parser.parse_args()
@@ -307,12 +274,7 @@ if __name__ == "__main__":
         exit(1)
 
     actions: dict[str, Callable[[str], object]] = {
-        "hard_limits": lambda access_token: logging.info(
-            f"Flight Hard Limits: {hard_limits(access_token)}"
-        ),
-        "takeoff_altitude": lambda access_token: logging.info(
-            f"Flight Take Off Altitude: {takeoff_altitude(access_token)}"
-        ),
+        "info": lambda access_token: logging.info(f"Flight Info: {info(access_token)}"),
         "telemetry": lambda access_token: flight_telemetry(
             lambda data: logging.info(
                 "Flight telemetry:\n%s", json.dumps(data, indent=2)
