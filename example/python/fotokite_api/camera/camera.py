@@ -36,7 +36,7 @@ def list_videostreams(access_token: str = "") -> VideoStreamMessage:
     """
     try:
         response: requests.Response = requests.get(
-            f"{BASE_REST_API_URL}/info/videostreams",
+            f"{BASE_REST_API_URL}/videostreams",
             headers={"Authorization": f"Bearer {access_token}"},
         )
         if response.status_code == 200:
@@ -67,7 +67,7 @@ def zoom(
     """
     try:
         response: requests.Response = requests.post(
-            f"{BASE_REST_API_URL}/commands/videostreams/{stream_id}/zoom",
+            f"{BASE_REST_API_URL}/videostreams/{stream_id}/control/zoom",
             json={"zoom_level": zoom_level},
             headers={"Authorization": f"Bearer {access_token}"},
         )
@@ -100,7 +100,7 @@ def set_palette(
     """
     try:
         response: requests.Response = requests.post(
-            f"{BASE_REST_API_URL}/commands/videostreams/{stream_id}/palette",
+            f"{BASE_REST_API_URL}/videostreams/{stream_id}/control/palette",
             json={"thermal_color_palette": palette},
             headers={"Authorization": f"Bearer {access_token}"},
         )
@@ -118,15 +118,14 @@ def set_palette(
 def videostreams_telemetry(
     on_message_callback: Callable[[list[VideoStream]], None],
     access_token: str,
-    stream_id: str | None = None,
+    stream_id: str = "",
     max_messages: int | None = None,
 ) -> None:
-    ws_url = f"{BASE_WEBSOCKET_API_URL}/telemetry/videostreams/subscribe"
+    if stream_id == "":
+        logging.error(f"No stream id provided")
+        return
 
-    if stream_id:
-        ws_url = (
-            f"{BASE_WEBSOCKET_API_URL}/telemetry/videostreams/{stream_id}/subscribe"
-        )
+    ws_url = f"{BASE_WEBSOCKET_API_URL}/videostreams/{stream_id}/state/subscribe"
 
     logging.info(ws_url)
 

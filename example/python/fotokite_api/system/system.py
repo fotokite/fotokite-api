@@ -32,7 +32,7 @@ def system_info(access_token: str = "") -> SystemMessage:
     """
     try:
         response = requests.get(
-            f"{BASE_REST_API_URL}/info/system",
+            f"{BASE_REST_API_URL}/system/info",
             headers={"Authorization": f"Bearer {access_token}"},
         )
         if response.status_code == 200:
@@ -57,7 +57,9 @@ def system_telemetry(
         access_token: The authentication token to use in the websocket connection.
         max_messages: The maximum number of messages to process. Defaults to None.
     """
-    ws_url = f"{BASE_WEBSOCKET_API_URL}/telemetry/system/subscribe?access_token={access_token}"
+    ws_url = (
+        f"{BASE_WEBSOCKET_API_URL}/system/state/subscribe?access_token={access_token}"
+    )
     try:
         with connect(
             ws_url, additional_headers={"Authorization": f"Bearer {access_token}"}
