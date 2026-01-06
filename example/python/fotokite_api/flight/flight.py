@@ -11,6 +11,7 @@ from fotokite_api.utils import (
     BASE_REST_API_URL,
     BASE_WEBSOCKET_API_URL,
     retrieve_auth_token,
+    retrieve_handoff,
 )
 
 
@@ -52,6 +53,10 @@ def take_off(access_token: str) -> bool:
         To check if the Kite has taken off, monitor the flight telemetry.
     """
     try:
+        in_control = retrieve_handoff(access_token)
+        if not in_control:
+            raise Exception("You need to retrieve handoff control before performing this action")
+
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
             f"{BASE_REST_API_URL}/flight/control/take_off", headers=headers
@@ -79,6 +84,10 @@ def land(access_token: str) -> bool:
         To check if the Kite has landed, monitor the flight telemetry.
     """
     try:
+        in_control = retrieve_handoff(access_token)
+        if not in_control:
+            raise Exception("You need to retrieve handoff control before performing this action")
+
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
             f"{BASE_REST_API_URL}/flight/control/land", headers=headers
@@ -107,6 +116,10 @@ def abort(access_token: str) -> bool:
         ongoing flight commands.
     """
     try:
+        in_control = retrieve_handoff(access_token)
+        if not in_control:
+            raise Exception("You need to retrieve handoff control before performing this action")
+
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
             f"{BASE_REST_API_URL}/flight/control/abort", headers=headers
@@ -136,6 +149,10 @@ def set_altitude(altitude: float, access_token: str) -> bool:
         will reach that altitude immediately. Monitor the flight telemetry to confirm altitude changes.
     """
     try:
+        in_control = retrieve_handoff(access_token)
+        if not in_control:
+            raise Exception("You need to retrieve handoff control before performing this action")
+
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
             f"{BASE_REST_API_URL}/flight/control/altitude",
@@ -172,6 +189,10 @@ def rotate_by_angle(access_token: str, pan: float = 0.0, tilt: float = 0.0) -> b
         if not (-180 <= pan <= 180) or not (-180 <= tilt <= 180):
             logging.error("Pan and tilt must be between -180 and 180 degrees.")
             return False
+
+        in_control = retrieve_handoff(access_token)
+        if not in_control:
+            raise Exception("You need to retrieve handoff control before performing this action")
 
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
