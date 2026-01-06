@@ -53,9 +53,7 @@ def take_off(access_token: str) -> bool:
         To check if the Kite has taken off, monitor the flight telemetry.
     """
     try:
-        in_control = retrieve_handoff(access_token)
-        if not in_control:
-            raise Exception("You need to retrieve handoff control before performing this action")
+        retrieve_handoff(access_token)
 
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
@@ -84,9 +82,7 @@ def land(access_token: str) -> bool:
         To check if the Kite has landed, monitor the flight telemetry.
     """
     try:
-        in_control = retrieve_handoff(access_token)
-        if not in_control:
-            raise Exception("You need to retrieve handoff control before performing this action")
+        retrieve_handoff(access_token)
 
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
@@ -116,9 +112,7 @@ def abort(access_token: str) -> bool:
         ongoing flight commands.
     """
     try:
-        in_control = retrieve_handoff(access_token)
-        if not in_control:
-            raise Exception("You need to retrieve handoff control before performing this action")
+        retrieve_handoff(access_token)
 
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
@@ -149,9 +143,7 @@ def set_altitude(altitude: float, access_token: str) -> bool:
         will reach that altitude immediately. Monitor the flight telemetry to confirm altitude changes.
     """
     try:
-        in_control = retrieve_handoff(access_token)
-        if not in_control:
-            raise Exception("You need to retrieve handoff control before performing this action")
+        retrieve_handoff(access_token)
 
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(
@@ -190,9 +182,7 @@ def rotate_by_angle(access_token: str, pan: float = 0.0, tilt: float = 0.0) -> b
             logging.error("Pan and tilt must be between -180 and 180 degrees.")
             return False
 
-        in_control = retrieve_handoff(access_token)
-        if not in_control:
-            raise Exception("You need to retrieve handoff control before performing this action")
+        retrieve_handoff(access_token)
 
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.post(

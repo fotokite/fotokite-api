@@ -8,10 +8,10 @@ from fotokite_api.flight.flight import (
     abort,
     flight_telemetry,
     land,
+    retrieve_handoff,
     rotate_by_angle,
     set_altitude,
     take_off,
-    retrieve_handoff,
 )
 from fotokite_api.notifications.notifications import start_telemetry_with_logging
 from fotokite_api.system.system import system_info, system_telemetry
@@ -58,9 +58,10 @@ def demo_flight() -> None:
         logging.error("Failed to retrieve authentication token. Exiting.")
         return
 
-    in_control = retrieve_handoff(access_token)
-    if not in_control:
-        logging.error("You need to retrieve handoff control before performing this action")
+    try:
+        retrieve_handoff(access_token)
+    except Exception as e:
+        logging.error(f"Failed to retrieve handoff: {e}")
         return
 
     # Identify the system

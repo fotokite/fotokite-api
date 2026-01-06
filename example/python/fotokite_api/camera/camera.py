@@ -67,9 +67,7 @@ def zoom(
         requests.HTTPError: If the API request fails with a non-200 status code.
     """
     try:
-        in_control = retrieve_handoff(access_token)
-        if not in_control:
-            raise Exception("You need to retrieve handoff control before performing this action")
+        retrieve_handoff(access_token)
 
         response: requests.Response = requests.post(
             f"{BASE_REST_API_URL}/videostreams/{stream_id}/control/zoom",
@@ -104,9 +102,7 @@ def set_palette(
         requests.HTTPError: If the HTTP request fails with a non-200 status code.
     """
     try:
-        in_control = retrieve_handoff(access_token)
-        if not in_control:
-            raise Exception("You need to retrieve handoff control before performing this action")
+        retrieve_handoff(access_token)
 
         response: requests.Response = requests.post(
             f"{BASE_REST_API_URL}/videostreams/{stream_id}/control/palette",

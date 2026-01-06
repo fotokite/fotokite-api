@@ -23,21 +23,15 @@ def retrieve_auth_token(api_key: str) -> str | None:
 
     return None
 
-def retrieve_handoff(access_token: str) -> bool:
-    try:
-        headers = {"Authorization": f"Bearer {access_token}"}
 
-        response = requests.post(
-            f"{BASE_REST_API_URL}/handoff/control/request",
-            json={
-                "operator_name": "API Controller",
-            },
-            headers=headers,
-        )
-        if response.status_code in [201, 202]:
-            return True
+def retrieve_handoff(access_token: str) -> None:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.post(
+        f"{BASE_REST_API_URL}/handoff/control/request",
+        json={
+            "operator_name": "API Controller",
+        },
+        headers=headers,
+    )
 
-        return False
-    except Exception as e:
-        logging.error(f"Error retrieving handoff control: {e}")
-        return False
+    response.raise_for_status()
