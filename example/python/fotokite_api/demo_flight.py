@@ -8,6 +8,7 @@ from fotokite_api.flight.flight import (
     abort,
     flight_telemetry,
     land,
+    retrieve_handoff,
     rotate_by_angle,
     set_altitude,
     take_off,
@@ -55,6 +56,12 @@ def demo_flight() -> None:
     access_token = retrieve_auth_token(API_KEY)
     if access_token is None:
         logging.error("Failed to retrieve authentication token. Exiting.")
+        return
+
+    try:
+        retrieve_handoff(access_token)
+    except Exception as e:
+        logging.error(f"Failed to retrieve handoff: {e}")
         return
 
     # Identify the system

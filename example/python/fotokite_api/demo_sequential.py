@@ -5,6 +5,7 @@ import time
 from fotokite_api.camera.camera import set_palette, zoom
 from fotokite_api.flight.flight import (
     land,
+    retrieve_handoff,
     rotate_by_angle,
     set_altitude,
     take_off,
@@ -39,7 +40,11 @@ def demo_sequential() -> None:
         logging.error("Failed to retrieve authentication token. Exiting.")
         return
 
-    logging.info(access_token)
+    try:
+        retrieve_handoff(access_token)
+    except Exception as e:
+        logging.error(f"Failed to retrieve handoff: {e}")
+        return
 
     wait_for(access_token, state="StandBy")
     take_off(access_token)

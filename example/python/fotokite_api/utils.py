@@ -4,7 +4,7 @@ import requests
 
 BASE_REST_API_URL = "http://192.168.2.100:3128/api/v0"
 BASE_WEBSOCKET_API_URL = "ws://192.168.2.100:3128/api/v0"
-API_KEY = "DemoApiKey123"
+API_KEY = "******"
 
 
 def retrieve_auth_token(api_key: str) -> str | None:
@@ -22,3 +22,16 @@ def retrieve_auth_token(api_key: str) -> str | None:
         return None
 
     return None
+
+
+def retrieve_handoff(access_token: str) -> None:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.post(
+        f"{BASE_REST_API_URL}/handoff/control/request",
+        json={
+            "operator_name": "API Controller",
+        },
+        headers=headers,
+    )
+
+    response.raise_for_status()

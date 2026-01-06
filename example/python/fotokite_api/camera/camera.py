@@ -13,6 +13,7 @@ from fotokite_api.utils import (
     BASE_REST_API_URL,
     BASE_WEBSOCKET_API_URL,
     retrieve_auth_token,
+    retrieve_handoff,
 )
 
 VideoStreamMessage = dict[str, object]
@@ -66,6 +67,8 @@ def zoom(
         requests.HTTPError: If the API request fails with a non-200 status code.
     """
     try:
+        retrieve_handoff(access_token)
+
         response: requests.Response = requests.post(
             f"{BASE_REST_API_URL}/videostreams/{stream_id}/control/zoom",
             json={"zoom_level": zoom_level},
@@ -99,6 +102,8 @@ def set_palette(
         requests.HTTPError: If the HTTP request fails with a non-200 status code.
     """
     try:
+        retrieve_handoff(access_token)
+
         response: requests.Response = requests.post(
             f"{BASE_REST_API_URL}/videostreams/{stream_id}/control/palette",
             json={"thermal_color_palette": palette},
