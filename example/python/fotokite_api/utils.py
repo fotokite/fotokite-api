@@ -2,9 +2,9 @@ import logging
 
 import requests
 
-BASE_REST_API_URL = "http://192.168.2.100:3128/api/v0"
-BASE_WEBSOCKET_API_URL = "ws://192.168.2.100:3128/api/v0"
-API_KEY = "DemoApiKey123"
+BASE_REST_API_URL = "http://localhost:3128/api/v0"
+BASE_WEBSOCKET_API_URL = "ws://localhost:3128/api/v0"
+API_KEY = "7xq2v9m4t1s8r5wz"
 
 
 def retrieve_auth_token(api_key: str) -> str | None:
@@ -22,3 +22,22 @@ def retrieve_auth_token(api_key: str) -> str | None:
         return None
 
     return None
+
+def retrieve_handoff(access_token: str) -> bool:
+    try:
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        response = requests.post(
+            f"{BASE_REST_API_URL}/handoff/control/request",
+            json={
+                "operator_name": "API Controller",
+            },
+            headers=headers,
+        )
+        if response.status_code in [201, 202]:
+            return True
+
+        return False
+    except Exception as e:
+        logging.error(f"Error retrieving handoff control: {e}")
+        return False
