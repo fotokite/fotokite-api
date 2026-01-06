@@ -9,6 +9,7 @@ from fotokite_api.flight.flight import (
     set_altitude,
     take_off,
     wait_for,
+    retrieve_handoff,
 )
 from fotokite_api.utils import API_KEY, retrieve_auth_token
 
@@ -39,7 +40,10 @@ def demo_sequential() -> None:
         logging.error("Failed to retrieve authentication token. Exiting.")
         return
 
-    logging.info(access_token)
+    in_control = retrieve_handoff(access_token)
+    if not in_control:
+        logging.error("You need to retrieve handoff control before performing this action")
+        return
 
     wait_for(access_token, state="StandBy")
     take_off(access_token)

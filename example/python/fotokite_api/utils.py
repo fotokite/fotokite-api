@@ -2,9 +2,9 @@ import logging
 
 import requests
 
-BASE_REST_API_URL = "http://localhost:3128/api/v0"
-BASE_WEBSOCKET_API_URL = "ws://localhost:3128/api/v0"
-API_KEY = "7xq2v9m4t1s8r5wz"
+BASE_REST_API_URL = "http://192.168.2.100:3128/api/v0"
+BASE_WEBSOCKET_API_URL = "ws://192.168.2.100:3128/api/v0"
+API_KEY = "******"
 
 
 def retrieve_auth_token(api_key: str) -> str | None:
