@@ -68,7 +68,7 @@ def start_gstreamer(rtsp_url: str, hls_dir: str) -> subprocess.Popen[bytes]:
     ]
 
     process = subprocess.Popen(
-        cmd, stdout=sys.stdout, stderr=sys.stderr, start_new_session=True,
+        cmd, stdout=sys.stdout, stderr=sys.stderr, start_new_session=True
     )
     logging.info(f"Started GStreamer for {rtsp_url}")
     return process
