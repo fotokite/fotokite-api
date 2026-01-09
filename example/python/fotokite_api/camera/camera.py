@@ -9,7 +9,6 @@ import requests
 from websockets.sync.client import connect
 
 from fotokite_api.utils import (
-    API_KEY,
     BASE_REST_API_URL,
     BASE_WEBSOCKET_API_URL,
     retrieve_auth_token,
@@ -127,7 +126,7 @@ def videostreams_telemetry(
     max_messages: int | None = None,
 ) -> None:
     if stream_id == "":
-        logging.error(f"No stream id provided")
+        logging.error("No stream id provided")
         return
 
     ws_url = f"{BASE_WEBSOCKET_API_URL}/videostreams/{stream_id}/state/subscribe"
@@ -176,8 +175,10 @@ def start_telemetry_with_logging(
     # Start the logger in a separate thread
     logging_thread = threading.Thread(target=log_videostreams, daemon=True)
     logging_thread.start()
-    # Start telemetry listening
-    videostreams_telemetry(_handle_videostreams, access_token, stream_id=stream_id)
+    # Ensure stream_id is a string
+    videostreams_telemetry(
+        _handle_videostreams, access_token, stream_id=stream_id or ""
+    )
 
 
 if __name__ == "__main__":
@@ -193,6 +194,17 @@ if __name__ == "__main__":
         default="list",
         help="Choose which action to trigger",
     )
+    parser.add_argument(
+        "--secret",
+        default="",
+        help="Authentication secret to use",
+    )
+    parser.add_argument(
+        "--secret_type",
+        choices=["key", "token"],
+        default="",
+        help="Whether to use an API Key for token issuance or directly a token on the request",
+    )
     args = parser.parse_args()
 
     actions: dict[str, Callable[[str], object]] = {
@@ -204,7 +216,7 @@ if __name__ == "__main__":
         ),
     }
 
-    auth_token = retrieve_auth_token(API_KEY)
+    auth_token = retrieve_auth_token(args.secret, args.secret_type)
     if auth_token is None:
         logging.error("Failed to retrieve authentication token. Exiting.")
         exit(1)

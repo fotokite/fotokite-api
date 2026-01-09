@@ -1,21 +1,21 @@
+import argparse
 import json
 import logging
 import threading
 import time
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 from fotokite_api.flight.flight import (
     abort,
     flight_telemetry,
     land,
-    retrieve_handoff,
     rotate_by_angle,
     set_altitude,
     take_off,
 )
 from fotokite_api.notifications.notifications import start_telemetry_with_logging
 from fotokite_api.system.system import system_info, system_telemetry
-from fotokite_api.utils import API_KEY, retrieve_auth_token
+from fotokite_api.utils import retrieve_auth_token, retrieve_handoff
 
 
 class FlightState(TypedDict):
@@ -33,7 +33,7 @@ state: FlightState = {
 }
 
 
-def demo_flight() -> None:
+def demo_flight(secret: str, secret_type: Literal["key", "token"]) -> None:
     """Demonstrates a flight sequence using the Fotokite API.
 
     This function performs the following steps:
@@ -53,7 +53,7 @@ def demo_flight() -> None:
     logging.basicConfig(level=logging.INFO)
 
     # Retrieve an access token
-    access_token = retrieve_auth_token(API_KEY)
+    access_token = retrieve_auth_token(secret, secret_type)
     if access_token is None:
         logging.error("Failed to retrieve authentication token. Exiting.")
         return
@@ -151,4 +151,18 @@ def handle_flight(data: dict[str, object], access_token: str) -> None:
 
 
 if __name__ == "__main__":
-    demo_flight()
+    parser = argparse.ArgumentParser(description="Fotokite API Camera Example")
+    parser.add_argument(
+        "--secret",
+        default="",
+        help="Authentication secret to use",
+    )
+    parser.add_argument(
+        "--secret_type",
+        choices=["key", "token"],
+        default="",
+        help="Whether to use an API Key for token issuance or directly a token on the request",
+    )
+    args = parser.parse_args()
+
+    demo_flight(args.secret, args.secret_type)

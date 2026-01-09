@@ -7,7 +7,6 @@ import requests
 from websockets.sync.client import connect
 
 from fotokite_api.utils import (
-    API_KEY,
     BASE_REST_API_URL,
     BASE_WEBSOCKET_API_URL,
     retrieve_auth_token,
@@ -96,9 +95,20 @@ if __name__ == "__main__":
         default="info",
         help="Choose which action to trigger",
     )
+    parser.add_argument(
+        "--secret",
+        default="",
+        help="Authentication secret to use",
+    )
+    parser.add_argument(
+        "--secret_type",
+        choices=["key", "token"],
+        default="",
+        help="Whether to use an API Key for token issuance or directly a token on the request",
+    )
     args = parser.parse_args()
 
-    auth_token = retrieve_auth_token(API_KEY)
+    auth_token = retrieve_auth_token(args.secret, args.secret_type)
     if auth_token is None:
         logging.error("Failed to retrieve authentication token. Exiting.")
         exit(1)

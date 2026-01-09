@@ -1,17 +1,18 @@
+import argparse
 import logging
 import random
 import time
+from typing import Literal
 
 from fotokite_api.camera.camera import set_palette, zoom
 from fotokite_api.flight.flight import (
     land,
-    retrieve_handoff,
     rotate_by_angle,
     set_altitude,
     take_off,
     wait_for,
 )
-from fotokite_api.utils import API_KEY, retrieve_auth_token
+from fotokite_api.utils import retrieve_auth_token, retrieve_handoff
 
 color_palettes = [
     "BlackHot",
@@ -24,7 +25,7 @@ color_palettes = [
 ]
 
 
-def demo_sequential() -> None:
+def demo_sequential(secret: str, secret_type: Literal["key", "token"]) -> None:
     """
     This demo sends commands and waits for them to complete, one after the
     other. The waiting uses a Websocket subscription under the hood, but this
@@ -35,7 +36,7 @@ def demo_sequential() -> None:
     """
 
     # Retrieve an access token
-    access_token = retrieve_auth_token(API_KEY)
+    access_token = retrieve_auth_token(secret, secret_type)
     if access_token is None:
         logging.error("Failed to retrieve authentication token. Exiting.")
         return
@@ -78,4 +79,18 @@ def demo_sequential() -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    demo_sequential()
+    parser = argparse.ArgumentParser(description="Fotokite API Camera Example")
+    parser.add_argument(
+        "--secret",
+        default="",
+        help="Authentication secret to use",
+    )
+    parser.add_argument(
+        "--secret_type",
+        choices=["key", "token"],
+        default="",
+        help="Whether to use an API Key for token issuance or directly a token on the request",
+    )
+    args = parser.parse_args()
+
+    demo_sequential(args.secret, args.secret_type)
