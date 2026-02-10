@@ -1,0 +1,5 @@
+*
+!./fotokite_api
+!./poetry.lock
+!./pyproject.toml
+!./Dockerfile.test
