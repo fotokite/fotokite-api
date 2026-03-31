@@ -7,4 +7,4 @@ COPY . .
 RUN pip install poetry && poetry install
 
 # This env variable tells faketime what time to "spoof"
-ENV LD_PRELOAD=libfaketime.so.1
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
