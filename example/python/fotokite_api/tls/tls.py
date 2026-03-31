@@ -1,12 +1,11 @@
 import argparse
 import json
 import logging
-from urllib.parse import urlparse
 
 import requests
 import urllib3
 
-from fotokite_api.tls.utils import verify_pinned_key
+from fotokite_api.tls.pinned_adapter import PinnedPublicKeyAdapter
 from fotokite_api.utils import (
     BASE_HTTPS_REST_API_URL,
     BASE_HTTPS_REST_API_URL_WITH_HOSTNAME,
@@ -23,7 +22,7 @@ def request_using_tls_hostname(hostname: str, access_token: str = "") -> None:
 
     try:
         response = requests.get(
-            f"{BASE_HTTPS_REST_API_URL_WITH_HOSTNAME.format(hostname=hostname)}/v1/system/info",
+            f"{BASE_HTTPS_REST_API_URL_WITH_HOSTNAME.format(hostname=hostname)}/system/info",
             headers={"Authorization": f"Bearer {access_token}"},
         )
         if response.status_code == 200:
@@ -38,34 +37,22 @@ def request_using_pinned_down_public_key(
     public_key: str, access_token: str = ""
 ) -> None:
     if not access_token or not public_key:
-        logging.error("Public key and access token are required for this action.")
+        logging.error("Public key and access token are required.")
         return
 
     try:
-        parsed = urlparse(BASE_HTTPS_REST_API_URL)
-        host = parsed.hostname
-        port = parsed.port or 443
+        session = requests.Session()
+        session.mount("https://", PinnedPublicKeyAdapter(public_key))
 
-        if not host:
-            logging.error("Failed to parse host from the base URL.")
-            return
-
-        verify_pinned_key(host, port, public_key)
-
-        # perform the actual request (skip normal TLS checks with verify=False)
-        response: requests.Response = requests.get(
+        response = session.get(
             f"{BASE_HTTPS_REST_API_URL}/system/info",
             headers={"Authorization": f"Bearer {access_token}"},
-            verify=False,
         )
-
-        if response.status_code == 200:
-            logging.info(f"System info: {json.dumps(response.json(), indent=2)}")
-        else:
-            response.raise_for_status()
+        response.raise_for_status()
+        logging.info(f"System info: {json.dumps(response.json(), indent=2)}")
 
     except Exception as e:
-        logging.error(f"Error fetching system info: {e}")
+        logging.error(f"TLS pin verification failed: {e}")
 
 
 if __name__ == "__main__":
