@@ -24,7 +24,7 @@ def request_using_tls_hostname(hostname: str, access_token: str = "") -> None:
 
     try:
         response = requests.get(
-            f"{BASE_HTTPS_REST_API_URL_WITH_HOSTNAME.format(hostname=hostname)}/v0/system/info",
+            f"{BASE_HTTPS_REST_API_URL_WITH_HOSTNAME.format(hostname=hostname)}/v1/system/info",
             headers={"Authorization": f"Bearer {access_token}"},
         )
         if response.status_code == 200:

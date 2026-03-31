@@ -4,11 +4,11 @@ from typing import Literal
 import requests
 
 BASE_HTTPS_REST_API_URL_WITH_HOSTNAME = (
-    "https://{hostname}.sigma.fotokite-test.com:8443/api"
+    "https://{hostname}.sigma.fotokite-system.com:8443/api"
 )
-BASE_HTTPS_REST_API_URL = "https://192.168.2.100:8443/api/v0"
-BASE_REST_API_URL = "http://192.168.2.100:3128/api/v0"
-BASE_WEBSOCKET_API_URL = "ws://192.168.2.100:3128/api/v0"
+BASE_HTTPS_REST_API_URL = "https://192.168.2.100:8443/api/v1"
+BASE_REST_API_URL = "http://192.168.2.100:3128/api/v1"
+BASE_WEBSOCKET_API_URL = "ws://192.168.2.100:3128/api/v1"
 
 
 def retrieve_auth_token(
