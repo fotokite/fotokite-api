@@ -76,11 +76,11 @@ make run_flight action="info" secret="<YOUR_API_KEY>" secret_type="key"
 
 The Fotokite system uses TLS (Transport Layer Security) to encrypt data between your application and the Ground Station (GS). When operating on the local network, there are two primary ways to establish a secure connection.
 
-The Ground Station typically listens for secure traffic on port **8443**.
+The Ground Station typically listens for secure traffic on port **443**.
 
 ### Hostname-Based Verification (Standard TLS)
 
-This method treats the Ground Station like a standard website. The URL format is `https://<GS_NAME>.sigma.fotokite-test.com:8443`.
+This method treats the Ground Station like a standard website. The URL format is `https://<GS_NAME>.sigma.fotokite-system.com:443`.
 
 ***Setup:** You must map the Ground Station's local IP to its hostname in your local `hosts` file (e.g., `/etc/hosts` on Ubuntu):
 `192.168.2.100  g028b.sigma.fotokite.com`
@@ -89,7 +89,7 @@ This method treats the Ground Station like a standard website. The URL format is
 
 ### Public Key Pinning (Offline Resilient)
 
-For field operations where internet access is unreliable, we recommend **Public Key Pinning**. This method allows you to connect via the local IP address (e.g., `https://192.168.2.100:8443`) and ignore the certificate expiration date while still maintaining security.
+For field operations where internet access is unavailable, we recommend **Public Key Pinning**. This method allows you to connect via the local IP address (e.g., `https://192.168.2.100:443`) and ignore the certificate expiration date while still maintaining security.
 
 Instead of trusting a Certificate Authority (CA), your application trusts a specific cryptographic hash of the Ground Station's Public Key.
 
@@ -105,16 +105,16 @@ echo | openssl s_client -connect <GS_IP>:8443 2>/dev/null | openssl x509 -pubkey
 
 ### Examples
 
-Detailed implementation of both methods can be found in `./tls/`.
+Detailed implementation of both methods can be found in `./fotokite_api/tls/`.
 
 ***Run via Hostname:**
-`make run_tls_example action=hostname hostname=g1538zh secret=<secret> secret_type=<key || token>`
+`make run_tls_example action=hostname gs_name=g1538zh secret=<secret> secret_type=<key || token>`
 ***Run via Pinned Key:**
 `make run_tls_example action=pinned_key public_key="<YOUR_HASH>" secret=<secret> secret_type=<key || token>`
 
 ### Tests
 
-You can run some containerized tests with time spooming that simulate certificate expiration, so you get a better feel of what to expect.
+You can run some containerized tests with time spoofing that simulate certificate expiration, so you get a better feel of what to expect.
 
 Prerequisites:
 
@@ -124,7 +124,7 @@ Prerequisites:
 
 #### **What these tests prove:**
 
-**Hostname Mode:** Will fail in the "future" because standard security requires an internet update every 30 days.
+**Hostname Mode:** Will fail in the "future" because standard security requires an internet update every 90 days.
 **Pinned Key Mode:** Will stay working forever, even years into the future without internet.
 
 #### **How to run them:**
@@ -160,7 +160,7 @@ make test_tls gs_name="g2211ZR" secret="zp2319UQO543NtE8tVvya19en_4RofaX1-h8nvE_
 | `pinned_key` | **Today** | PASS | The key matches. |
 | `pinned_key` | **-2 Years** | PASS | The key matches. |
 | `pinned_key` | **+2 Years** | PASS | Success, pinning ignores
-| `wrong pinned_key` | **Today** | FAIL | The public key is invalid the date. |
+| `wrong pinned_key` | **Today** | FAIL | The pinned public key does not match the server's key (pin mismatch). |
 
 <div style="background-color:#CF8008; color:white; padding:1em; border-radius:6px;">
 Important <br/>

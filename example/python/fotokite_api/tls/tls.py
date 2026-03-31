@@ -17,7 +17,6 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def request_using_tls_hostname(hostname: str, access_token: str = "") -> None:
-    """ """
     if not access_token or not hostname:
         logging.error("Hostname and access token are required for this action.")
         return
