@@ -3,19 +3,30 @@ info:
   title: Fotokite API
   description: Allows access to all Fotokite Sigma functionality from a single entry
     point.
-  version: 0.5.0
+  version: 1.0.0
 servers:
 - url: http://192.168.2.100:3128/api
   description: API service running on the system
-- url: http://{hostname}:3128/api
-  description: API service visible through NAT
+- url: http://{hostname_or_ip}/api
+  description: Unencrypted API anywhere, for development use
   variables:
-    hostname:
-      default: sigma.local
+    hostname_or_ip:
+      default: localhost:3128
+- url: https://{hostname_or_ip}/api
+  description: Encrypted API accessible from outside the Sigma network
+  variables:
+    hostname_or_ip:
+      default: fotokite-sigma.local
+- url: https://{gsname}.sigma.fotokite-system.com/api
+  description: Hostname used for TLS certificates. The API is not reachable there,
+    unless a local DNS override is set.
+  variables:
+    gsname:
+      default: G2628RH
 security:
 - TokenAuth: []
 paths:
-  /v0/health:
+  /health:
     get:
       tags:
       - Health
@@ -31,13 +42,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
         500:
-          description: API is unhealthy
+          description: API is not healthy
           content:
             application/json:
               schema:
                 type: string
                 example: Service Unavailable
-  /v0/auth/token/request:
+  /v1/health:
+    get:
+      tags:
+      - Health
+      security:
+      - {}
+      summary: Get health status
+      description: Returns the health status and the version of the Fotokite API.
+      responses:
+        200:
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        500:
+          description: API is not healthy
+          content:
+            application/json:
+              schema:
+                type: string
+                example: Service Unavailable
+  /v1/auth/token/request:
     post:
       tags:
       - Authentication
@@ -81,7 +114,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /v0/auth/token/invalidate:
+  /v1/auth/token/invalidate:
     post:
       tags:
       - Authentication
@@ -94,6 +127,12 @@ paths:
       responses:
         200:
           description: Token invalidated
+        401:
+          description: Unauthorized - Invalid or missing API Token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         403:
           description: Forbidden - Token valid but insufficient permissions
           content:
@@ -106,7 +145,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /v0/auth/tokens:
+  /v1/auth/tokens:
     get:
       tags:
       - Authentication
@@ -140,7 +179,7 @@ paths:
                 $ref: '#/components/schemas/Error'
         500:
           $ref: '#/components/responses/InternalError'
-  /v0/auth/plugin/update:
+  /v1/auth/plugin/update:
     post:
       tags:
       - Authentication
@@ -188,7 +227,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /v0/{category}/{endpoint}/subscribe:
+  /v1/{category}/{endpoint}/subscribe:
     get:
       tags:
       - Subscription
@@ -253,7 +292,7 @@ paths:
           description: Endpoint does not exist
         405:
           description: Endpoint does not support subscription
-  /v0/notifications/state:
+  /v1/notifications/state:
     get:
       tags:
       - Notifications
@@ -272,7 +311,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotificationsObject'
-  /v0/notifications/history:
+  /v1/notifications/history:
     get:
       tags:
       - Notifications
@@ -282,10 +321,10 @@ paths:
       summary: Get system notifications
       description: 'Returns system notifications. A notification is a temporary or
         permanent event that reflects the current system state. This could be an error
-        state, an alert or a simple message. If the request body is empty, all currently
-        active notifications will be returned. Every response contains to_time time
-        point. Up to this time point notifications are fetched. An event gets into
-        the response, if the end_time is not set or greater or equal to the to_time.
+        state, an alert or a simple message. If the request parameter is empty, all
+        currently active notifications will be returned. Every response contains to_time
+        time point. Up to this time point notifications are fetched. An event gets
+        into the response, if the end_time is not set or greater or equal to the to_time.
         It is recommended to use this point for the next request to not miss any notification
         and to not request the same notifications multiple times.
 
@@ -310,7 +349,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotificationsObject'
-  /v0/notifications/dictionary:
+  /v1/notifications/dictionary:
     get:
       tags:
       - Notifications
@@ -334,7 +373,7 @@ paths:
                 description: Notifications dictionary
                 items:
                   $ref: '#/components/schemas/NotificationDictionaryItem'
-  /v0/handoff/state:
+  /v1/handoff/state:
     get:
       tags:
       - Handoff
@@ -355,7 +394,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HandoffState'
-  /v0/handoff/control/request:
+  /v1/handoff/control/request:
     post:
       tags:
       - Handoff
@@ -393,9 +432,11 @@ paths:
             after 1 minute if not taken.
 
             '
+        400:
+          $ref: '#/components/responses/WrongInput'
         500:
           $ref: '#/components/responses/InternalError'
-  /v0/handoff/control/release:
+  /v1/handoff/control/release:
     post:
       tags:
       - Handoff
@@ -415,7 +456,7 @@ paths:
             '
         500:
           $ref: '#/components/responses/InternalError'
-  /v0/handoff/control/override:
+  /v1/handoff/control/override:
     post:
       tags:
       - Handoff
@@ -448,7 +489,7 @@ paths:
                 $ref: '#/components/schemas/Error'
         500:
           $ref: '#/components/responses/InternalError'
-  /v0/system/info:
+  /v1/system/info:
     get:
       tags:
       - System
@@ -464,7 +505,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemInfo'
-  /v0/system/state:
+  /v1/system/state:
     get:
       tags:
       - System
@@ -482,7 +523,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemState'
-  /v0/flight/info:
+  /v1/flight/info:
     get:
       tags:
       - Flight
@@ -502,7 +543,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FlightInfo'
-  /v0/flight/state:
+  /v1/flight/state:
     get:
       tags:
       - Flight
@@ -520,7 +561,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FlightState'
-  /v0/flight/control/take_off:
+  /v1/flight/control/take_off:
     post:
       tags:
       - Flight
@@ -535,7 +576,7 @@ paths:
           $ref: '#/components/responses/ControlCommandBlocked'
         409:
           $ref: '#/components/responses/NotAllowedInCurrentState'
-  /v0/flight/control/land:
+  /v1/flight/control/land:
     post:
       tags:
       - Flight
@@ -550,14 +591,14 @@ paths:
           $ref: '#/components/responses/ControlCommandBlocked'
         409:
           $ref: '#/components/responses/NotAllowedInCurrentState'
-  /v0/flight/control/abort:
+  /v1/flight/control/abort:
     post:
       tags:
       - Flight
       security:
       - TokenAuth:
         - control
-      summary: Abort take off or landing
+      summary: Abort take off, landing, or rotation command
       responses:
         202:
           $ref: '#/components/responses/CommandSuccess'
@@ -565,7 +606,7 @@ paths:
           $ref: '#/components/responses/ControlCommandBlocked'
         409:
           $ref: '#/components/responses/NotAllowedInCurrentState'
-  /v0/flight/control/altitude:
+  /v1/flight/control/altitude:
     post:
       tags:
       - Flight
@@ -578,7 +619,6 @@ paths:
         content:
           application/json:
             schema:
-              type: object
               $ref: '#/components/schemas/ControlAltitudeRequest'
       responses:
         202:
@@ -591,7 +631,7 @@ paths:
           $ref: '#/components/responses/NotAllowedInCurrentState'
         503:
           $ref: '#/components/responses/ServiceUnavailable'
-  /v0/flight/control/altitude_soft_max:
+  /v1/flight/control/altitude_soft_max:
     post:
       tags:
       - Flight
@@ -609,7 +649,6 @@ paths:
         content:
           application/json:
             schema:
-              type: object
               $ref: '#/components/schemas/ControlSoftAltitudeMaxRequest'
       responses:
         204:
@@ -620,7 +659,7 @@ paths:
           $ref: '#/components/responses/ControlCommandBlocked'
         503:
           $ref: '#/components/responses/ServiceUnavailable'
-  /v0/camera/info:
+  /v1/camera/info:
     get:
       tags:
       - Camera
@@ -638,7 +677,7 @@ paths:
                 $ref: '#/components/schemas/CameraInfo'
         404:
           $ref: '#/components/responses/CameraNotFound'
-  /v0/camera/state:
+  /v1/camera/state:
     get:
       tags:
       - Camera
@@ -658,7 +697,7 @@ paths:
                 $ref: '#/components/schemas/CameraState'
         404:
           $ref: '#/components/responses/CameraNotFound'
-  /v0/camera/control/rotate_by_angle:
+  /v1/camera/control/rotate_by_angle:
     post:
       tags:
       - Camera
@@ -690,7 +729,7 @@ paths:
           $ref: '#/components/responses/NotAllowedInCurrentState'
         503:
           $ref: '#/components/responses/ServiceUnavailable'
-  /v0/camera/control/rotate_to_angle:
+  /v1/camera/control/rotate_to_angle:
     post:
       tags:
       - Camera
@@ -708,7 +747,6 @@ paths:
         content:
           application/json:
             schema:
-              type: object
               $ref: '#/components/schemas/RotateCameraToAngle'
       responses:
         202:
@@ -723,7 +761,7 @@ paths:
           $ref: '#/components/responses/NotAllowedInCurrentState'
         503:
           $ref: '#/components/responses/ServiceUnavailable'
-  /v0/camera/control/rotate_with_speed:
+  /v1/camera/control/rotate_with_speed:
     post:
       tags:
       - Camera
@@ -743,7 +781,6 @@ paths:
         content:
           application/json:
             schema:
-              type: object
               $ref: '#/components/schemas/RotateCameraWithSpeed'
       responses:
         202:
@@ -758,7 +795,7 @@ paths:
           $ref: '#/components/responses/NotAllowedInCurrentState'
         503:
           $ref: '#/components/responses/ServiceUnavailable'
-  /v0/videostreams:
+  /v1/videostreams:
     get:
       tags:
       - Video streams
@@ -766,7 +803,11 @@ paths:
       - TokenAuth:
         - read
       summary: Get video streams information
-      description: Returns video stream information.
+      description: 'Returns video stream information. URLs for the video streams are
+        generated dynamically based on client and network context, which prevents
+        this endpoint from supporting subscriptions.
+
+        '
       responses:
         200:
           description: Video stream settings
@@ -787,8 +828,8 @@ paths:
                 zoom_min: 1.0
                 zoom_max: 32.0
                 codec: H.264
-                protocol: RTP
-                url: rtsp://192.168.2.100:5010/video
+                rtsp_url: rtsp://192.168.2.100:554/zoom
+                rtsps_url: rtsps://192.168.2.100:322/zoom
                 can_do_snapshot: true
               - stream_id: overview
                 type: Color
@@ -800,8 +841,8 @@ paths:
                 zoom_min: 1.0
                 zoom_max: 1.0
                 codec: H.264
-                protocol: RTP
-                url: rtsp://192.168.2.100:5014/video
+                rtsp_url: rtsp://192.168.2.100:554/wide
+                rtsps_url: rtsps://192.168.2.100:322/wide
                 can_do_snapshot: true
               - stream_id: thermal
                 type: Thermal
@@ -813,10 +854,10 @@ paths:
                 zoom_min: 1.0
                 zoom_max: 1.0
                 codec: H.264
-                protocol: RTP
-                url: rtsp://192.168.2.100:5012/video
+                rtsp_url: rtsp://192.168.2.100:554/thermal
+                rtsps_url: rtsps://192.168.2.100:322/thermal
                 can_do_snapshot: true
-  /v0/videostreams/{stream_id}/state:
+  /v1/videostreams/{stream_id}/state:
     get:
       tags:
       - Video streams
@@ -869,7 +910,7 @@ paths:
                     thermal_color_palette: Ironbow
         404:
           $ref: '#/components/responses/VideostreamOrCameraNotFound'
-  /v0/videostreams/{stream_id}/control/zoom:
+  /v1/videostreams/{stream_id}/control/zoom:
     post:
       tags:
       - Video streams
@@ -891,7 +932,6 @@ paths:
         content:
           application/json:
             schema:
-              type: object
               $ref: '#/components/schemas/ControlZoomRequest'
       responses:
         202:
@@ -908,7 +948,7 @@ paths:
           $ref: '#/components/responses/BadGateway'
         503:
           $ref: '#/components/responses/ServiceUnavailable'
-  /v0/videostreams/{stream_id}/control/palette:
+  /v1/videostreams/{stream_id}/control/palette:
     post:
       tags:
       - Video streams
@@ -930,7 +970,6 @@ paths:
         content:
           application/json:
             schema:
-              type: object
               $ref: '#/components/schemas/ControlThermalPaletteRequest'
       responses:
         202:
@@ -945,7 +984,7 @@ paths:
           $ref: '#/components/responses/NotAllowedInCurrentState'
         502:
           $ref: '#/components/responses/BadGateway'
-  /v0/videostreams/{stream_id}/snapshot:
+  /v1/videostreams/{stream_id}/snapshot:
     get:
       tags:
       - Video streams
@@ -978,7 +1017,7 @@ paths:
           $ref: '#/components/responses/NotAllowedInCurrentState'
         502:
           $ref: '#/components/responses/BadGateway'
-  /v0/recordings:
+  /v1/recordings:
     get:
       summary: Get video recordings
       description: A recording is a collection of video files (color and thermal)
@@ -998,28 +1037,28 @@ paths:
                 items:
                   $ref: '#/components/schemas/Recording'
                 example:
-                - recording_id: 20220616%5F132946%5F%2B0200
+                - recording_id: 20260616_132946_+0200
                   is_being_recorded: false
                   videos:
                   - type: color
-                    recording_id: 20220616_132946_+0200
+                    recording_id: 20260616_132946_+0200
                     file_id: main.mp4
                     size: 104857600
                     is_recording: false
                   - type: thermal
-                    recording_id: 20220616_132946_+0200
+                    recording_id: 20260616_132946_+0200
                     file_id: sub.mp4
                     size: 52428800
                     is_recording: false
-                - recording_id: 20220617%5F140000%5F%2B0200
+                - recording_id: 20260617_140000_+0200
                   is_being_recorded: true
                   videos:
                   - type: color
-                    recording_id: 20220617_140000_+0200
+                    recording_id: 20260617_140000_+0200
                     file_id: main.mp4
                     size: 20480000
                     is_recording: true
-  /v0/recordings/state:
+  /v1/recordings/state:
     get:
       summary: Get video recorder state
       description: Returns the current video recorder state.
@@ -1035,15 +1074,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RecordingsState'
-  /v0/recordings/{recording_id}:
+  /v1/recordings/{recording_id}:
     parameters:
     - name: recording_id
       in: path
       required: true
-      description: ID of the video recording, URL-encoded.
+      description: ID of the video recording
       schema:
         type: string
-      example: 20220616%5F132946%5F%2B0200
+      example: 20260616_132946_+0200
     get:
       summary: Get video recording
       description: Returns a video recording. A video recording is a collection of
@@ -1082,7 +1121,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
         400:
           $ref: '#/components/responses/WrongInput'
-  /v0/recordings/{recording_id}/{file_id}:
+  /v1/recordings/{recording_id}/{file_id}:
     parameters:
     - name: recording_id
       in: path
@@ -1090,7 +1129,7 @@ paths:
       description: ID of the video recording, URL-encoded.
       schema:
         type: string
-      example: 20220616_132946_+0200
+      example: 20260616_132946_+0200
     - name: file_id
       in: path
       required: true
@@ -1105,7 +1144,7 @@ paths:
         buffering or browser playback.
       schema:
         type: string
-        pattern: ^bytes=((\d+-\d*,?)+|-\d+)$
+      example: bytes=0-1048575
     get:
       summary: Download video
       description: Returns a specific video of a recording.
@@ -1143,6 +1182,7 @@ paths:
               schema:
                 type: string
                 pattern: ^bytes \d+-\d+/\d+$
+              example: bytes 0-1048575/10485760
           content:
             video/mp4:
               schema:
@@ -1158,7 +1198,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
         416:
           $ref: '#/components/responses/RangeNotSatisfiable'
-  /v0/recordings/control/start:
+  /v1/recordings/control/start:
     post:
       summary: Start video recording
       description: Starts a video recording. A video recording is a collection of
@@ -1169,7 +1209,7 @@ paths:
       - TokenAuth:
         - control
       responses:
-        200:
+        201:
           $ref: '#/components/responses/CommandSuccess'
         400:
           $ref: '#/components/responses/WrongInput'
@@ -1183,7 +1223,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
         507:
           $ref: '#/components/responses/InsufficientStorage'
-  /v0/recordings/control/stop:
+  /v1/recordings/control/stop:
     post:
       summary: Stop video recording
       description: Stops the current video recording.
@@ -1193,7 +1233,7 @@ paths:
       - TokenAuth:
         - control
       responses:
-        200:
+        201:
           $ref: '#/components/responses/CommandSuccess'
         400:
           $ref: '#/components/responses/WrongInput'
@@ -1224,7 +1264,7 @@ components:
       type: oauth2
       flows:
         clientCredentials:
-          tokenUrl: http://192.168.2.100:3128/api/v0/authentication/tokens/request
+          tokenUrl: http://192.168.2.100:3128/api/v1/auth/token/request
           scopes:
             read: Grants access to retrieve system data and information.
             control: Allows sending commands to control the system.
@@ -1341,7 +1381,7 @@ components:
           type: string
           example: 1.0.1
           x-oapi-codegen-extra-tags:
-            fk-default: 0.5.0
+            fk-default: 1.0.0
     Error:
       type: object
       description: A generic error object.
@@ -1501,6 +1541,19 @@ components:
             '
           type: string
           example: Disabled
+    ApiKey:
+      type: object
+      description: Hashed Fotokite API key used by this plugin
+      required:
+      - key
+      properties:
+        key:
+          type: string
+          description: 'Hashed key
+
+            '
+        valid_from:
+          type: string
     StateUpdate:
       type: object
       description: Status update from a plugin or other customer integration.
@@ -1662,7 +1715,6 @@ components:
             session_id: '3'
             session_name: Fotokite-D
             operator_name: Fotokite-D
-            ip_address: 192.168.2.189
             last_change: '2025-08-25T18:48:01.111Z'
           - plugin_id: My cool plugin Id
             plugin_name: My cool plugin
@@ -1704,12 +1756,6 @@ components:
           type: string
           description: 'Operator name provided to `take_command` or `request_command`
             endpoint.
-
-            '
-        ip_address:
-          type: string
-          description: 'IP address of the machine. Optional field used by Fotokite
-            Tablets.
 
             '
         last_change:
@@ -1760,12 +1806,6 @@ components:
             endpoint.
 
             '
-        ip_address:
-          type: string
-          description: 'IP address of the machine. Optional field used by Fotokite
-            Tablets.
-
-            '
         last_change:
           type: string
           format: date-time
@@ -1783,15 +1823,76 @@ components:
           description: 'Name of the operator taking control for display in UI.
 
             '
-        ip_address:
-          type: string
-          description: 'IP address of the machine taking control. Optional field used
-            by Fotokite Tablets.
-
-            '
+        regulatory_mode:
+          $ref: '#/components/schemas/OperatorRegulatoryMode'
+        operator_gps_lat:
+          description: Latitude of the operator reported by GPS [-90..+90] (degrees)
+          type: number
+          minimum: -90
+          exclusiveMinimum: true
+          maximum: 90
+        operator_gps_lon:
+          description: Longitude of the operator reported by GPS (-180..+180] (degrees)
+          type: number
+          minimum: -180
+          exclusiveMinimum: true
+          maximum: 180
+        operator_gps_elevation:
+          description: Elevation of the operator reported by GPS (meters)
+          type: number
+        operator_gps_accuracy:
+          description: Operator GPS accuracy in meters
+          type: number
+          minimum: 0
       example:
         operator_name: Mr. Handoff
-        ip_address: 192.168.2.212
+    OperatorRegulatoryMode:
+      type: string
+      description: 'DroneID regulation variant that the UI provided to the operator
+        complies with.
+
+
+        DroneID broadcasts such as those required for FAA RemoteID contain information
+        about the UAS operator. This endpoint can be used to provide such information.
+        An update must be provided regularly according to the applicable regulation
+        to prevent entering a DroneID error state (this may require sending handoff
+        requests more frequently than it is required normally).
+
+
+        By setting this value, you declare compliance with the relevant regulation.
+
+
+        For the US:
+
+        *  An operator location of sufficient accuracy is required. A GPS receiver
+        with SBAS augmentation is sufficient.
+
+        * Any DroneID error reported by the `/system/state` endpoint must cause an
+        audiovisual indicator to signal a Remote ID failure to the operator.
+
+
+        Please refer to FAA 14 CFR Part 89, ASTM F3411 and ASTM F3586 for details.
+
+
+        **Possible values:**
+
+
+        * `US_REMOTE_ID_STANDARD`
+
+        * `unset`
+
+
+        If unset, this operator is not considered as a UAS operator, and a RemoteID
+        error might occur if regulation requires an operator but no other operator
+        is present.
+
+
+        If no location information is provided, it is assumed that the operator is
+        in direct vincinity of the Ground Station and the Ground Station location
+        is used as the operator location.
+
+        '
+      example: US_REMOTE_ID_STANDARD
     SystemInfo:
       type: object
       description: Represents system information
@@ -1831,6 +1932,13 @@ components:
           description: Model/generation of the Fotokite system
           type: string
           example: Sigma
+        propeller_model:
+          description: 'Model of the propellers used in the system. Possible values:
+            * `Propeller 1st Generation` * `Propeller 2nd Generation`
+
+            '
+          type: string
+          example: Propeller 1st Generation
         timezone:
           description: Timezone of the Fotokite system
           type: string
@@ -2175,11 +2283,6 @@ components:
     CameraInfo:
       type: object
       description: Camera information
-      required:
-      - pan_speed_min
-      - pan_speed_max
-      - tilt_speed_min
-      - tilt_speed_max
       properties:
         model:
           description: 'Camera model. Allows to identify the camera type. Possible
@@ -2208,12 +2311,37 @@ components:
         tilt_speed_max:
           description: Maximum absolute tilt speed of the camera (degrees/sec)
           type: number
+        tilt_min:
+          description: Minimum tilt angle of the camera relative to the kite (degrees)
+          type: number
+          minimum: -90.0
+          maximum: 0.0
+        tilt_max:
+          description: Maximum tilt angle of the camera relative to the kite (degrees)
+          type: number
+          minimum: 0.0
+          maximum: 90.0
+        roll_min:
+          description: Minimum roll angle of the camera relative to the kite (degrees)
+          type: number
+          minimum: -180.0
+          exclusiveMinimum: true
+          maximum: 0.0
+        roll_max:
+          description: Maximum roll angle of the camera relative to the kite (degrees)
+          type: number
+          minimum: 0.0
+          maximum: 180.0
       example:
         model: SigCam2
         pan_speed_min: 2.0
-        pan_speed_max: 30.0
+        pan_speed_max: 25.0
         tilt_speed_min: 2.0
-        tilt_speed_max: 30.0
+        tilt_speed_max: 25.0
+        tilt_min: -11.0
+        tilt_max: 80.0
+        roll_min: 0.0
+        roll_max: 0.0
     CameraState:
       type: object
       description: Camera state
@@ -2328,18 +2456,22 @@ components:
       properties:
         pan_speed:
           description: 'Change the camera pan with the angle speed specified. Positive
-            value - rotate clockwise (degrees/sec). Minimum absolute speed is `camera_pan_speed_min`
-            (degrees/sec). Maximum absolute speed is `camera_pan_speed_max` (degrees/sec).
-            If parameter missed then pan speed is considered to be 0 (no pan).
+            value - rotate clockwise (degrees/sec). Negative value - rotate counter-clockwise
+            (degrees/sec). 0 - stop any previously commanded pan movement. If parameter
+            missed then pan speed is considered to be 0 (no pan). Minimum absolute
+            speed is `camera_pan_speed_min` (degrees/sec). Maximum absolute speed
+            is `camera_pan_speed_max` (degrees/sec).
 
             '
           type: number
           example: 11
         tilt_speed:
           description: 'Change the camera tilt with the angle speed specified. Positive
-            value - rotate down (degrees/sec). Minimum absolute speed is `camera_tilt_speed_min`
-            (degrees/sec). Maximum absolute speed is `camera_tilt_speed_max` (degrees/sec).
-            If parameter missed then tilt speed is considered to be 0 (no tilt).
+            value - rotate down (degrees/sec). Negative value - rotate up (degrees/sec).
+            0 - stop any previously commanded tilt movement. If parameter missed then
+            tilt speed is considered to be 0 (no tilt). Minimum absolute speed is
+            `camera_tilt_speed_min` (degrees/sec). Maximum absolute speed is `camera_tilt_speed_max`
+            (degrees/sec).
 
             '
           type: number
@@ -2360,9 +2492,7 @@ components:
       required:
       - stream_id
       - type
-      - protocol
       - codec
-      - url
       - sensor_width
       - sensor_height
       - lens_focal_length
@@ -2413,16 +2543,14 @@ components:
             '
           type: string
           example: H.264
-        protocol:
-          description: 'Video stream protocol. Possible values: - `RTP`
-
-            '
+        rtsp_url:
+          description: RTSP video stream url.
           type: string
-          example: RTP
-        url:
-          description: Video stream url.
+          example: rtsp://192.168.2.100:554/thermal
+        rtsps_url:
+          description: RTSPS encoded video stream url.
           type: string
-          example: rtsp://192.168.2.100:5012/video
+          example: rtsps://192.168.2.100:322/thermal
         can_do_snapshot:
           description: 'If true then the video stream supports snapshot functionality.
             This means that the video stream can provide a snapshot image.
@@ -2555,7 +2683,7 @@ components:
         recording_id:
           type: string
           description: ID of the recording.
-          example: 20220616%5F132946%5F%2B0200
+          example: 20260616_132946_+0200
         started_recording_timestamp:
           type: string
           format: date-time
@@ -2600,8 +2728,8 @@ components:
       properties:
         recording_id:
           type: string
-          description: Identifier of the recording, URL-encoded.
-          example: 20220616%5F132946%5F%2B0200
+          description: Identifier of the recording.
+          example: 20260616_132946_+0200
         is_being_recorded:
           type: boolean
           description: Whether this recording is currently being recorded.
