@@ -72,9 +72,98 @@ make run_flight action="info" secret="<YOUR_API_KEY>" secret_type="key"
   - Run with GStreamer (This requires GStreamer to be installed on your system):
     `make run_gstreamer_streamer`
 
+## TLS and Secure Connectivity
+
+The Fotokite system uses TLS (Transport Layer Security) to encrypt data between your application and the Ground Station (GS). When operating on the local network, there are two primary ways to establish a secure connection.
+
+The Ground Station typically listens for secure traffic on port **443**.
+
+### Hostname-Based Verification (Standard TLS)
+
+This method treats the Ground Station like a standard website. The URL format is `https://<GS_NAME>.sigma.fotokite-system.com:443`.
+
+***Setup:** You must map the Ground Station's local IP to its hostname in your local `hosts` file (e.g., `/etc/hosts` on Ubuntu):
+`192.168.2.100  g028b.sigma.fotokite.com`
+***Internet Requirement:** The system uses CertMagic to manage certificates via the Google Public CA. The Ground Station **must connect to the internet at least once every 90 days** to renew its certificate.
+***Failure Case:** If the certificate expires while the system is offline, standard TLS verification will fail, and the API will become inaccessible via this method until an internet connection is restored and the certificate is auto-renewed.
+
+### Public Key Pinning (Offline Resilient)
+
+For field operations where internet access is unavailable, we recommend **Public Key Pinning**. This method allows you to connect via the local IP address (e.g., `https://192.168.2.100:443`) and ignore the certificate expiration date while still maintaining security.
+
+Instead of trusting a Certificate Authority (CA), your application trusts a specific cryptographic hash of the Ground Station's Public Key.
+
+**Resilience:** Works indefinitely without an internet connection. Even if the certificate technically "expires," the connection remains secure because the Public Key hasn't changed.
+**Retrieving the Pin-Hash:** You can retrieve the SHA-256 pin-hash of your Ground Station by running the following command (Ubuntu):
+
+```bash
+echo | openssl s_client -connect <GS_IP>:443 2>/dev/null | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64
+
+```
+
+***Usage:** Pass the resulting hash to the `--public_key` argument in the example scripts.
+
+### Examples
+
+Detailed implementation of both methods can be found in `./fotokite_api/tls/`.
+
+***Run via Hostname:**
+`make run_tls_example action=hostname gs_name=g1538zh secret=<secret> secret_type=<key || token>`
+***Run via Pinned Key:**
+`make run_tls_example action=pinned_key public_key="<YOUR_HASH>" secret=<secret> secret_type=<key || token>`
+
+### Tests
+
+You can run some containerized tests with time spoofing that simulate certificate expiration, so you get a better feel of what to expect.
+
+Prerequisites:
+
+- Docker installed.
+- Connection to the GS network.
+- Valid API token and public key.
+
+#### **What these tests prove:**
+
+**Hostname Mode:** Will fail in the "future" because standard security requires an internet update every 90 days.
+**Pinned Key Mode:** Will stay working forever, even years into the future without internet.
+
+#### **How to run them:**
+
+1. **Configure the Makefile:**
+
+Fill in your Ground Station's details:
+
+```makefile
+gs_ip = 192.168.2.100
+gs_name = G2505ZH
+secret = <YOUR_TOKEN>
+public_key = <YOUR_PUBLIC_KEY_HASH>
+
+```
+
+2. **Execute the Time Travel tests:**
+
+```bash
+make test_tls
+
+# You can also skip step 1 and just pass in the variables as params directly
+make test_tls gs_name="g2211ZR" secret="zp2319UQO543NtE8tVvya19en_4RofaX1-h8nvE_YCUwfuN_eMuljSSwFsGH6mFQvTI=" secret_type="token" public_key="TXGEHuBaJE31UETqrgHYCLD2Fg2Kn2LV2fv2642v6/I="
+```
+
+#### **What to look for in the results:**
+
+| Test Action | Clock Set To | Result | Why? |
+| --- | --- | --- | --- |
+| `hostname` | **Today** | PASS | Everything is valid. |
+| `hostname` | **-2 Years** | FAIL | The certificate is not valid yet. |
+| `hostname` | **+2 Years** | FAIL | The certificate expired. |
+| `pinned_key` | **Today** | PASS | The key matches. |
+| `pinned_key` | **-2 Years** | PASS | The key matches. |
+| `pinned_key` | **+2 Years** | PASS | Success, pinning ignores
+| `wrong pinned_key` | **Today** | FAIL | The pinned public key does not match the server's key (pin mismatch). |
+
 <div style="background-color:#CF8008; color:white; padding:1em; border-radius:6px;">
 Important <br/>
 Some of these commands will start the system.<br>
 Make sure the system is in an environment where it is safe to take off if a corresponding action is triggered.
 </div>
-<br/>
