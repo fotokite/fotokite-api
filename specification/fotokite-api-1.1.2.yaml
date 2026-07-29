@@ -3,7 +3,7 @@ info:
   title: Fotokite API
   description: Allows access to all Fotokite Sigma functionality from a single entry
     point.
-  version: 1.0.0
+  version: 1.1.2
 servers:
 - url: http://192.168.2.100:3128/api
   description: API service running on the system
@@ -197,7 +197,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PluginUpdatableFields'
+              $ref: '#/components/schemas/PluginSelfUpdatableFields'
       responses:
         204:
           description: Updated
@@ -236,7 +236,7 @@ paths:
       parameters:
       - in: path
         name: category
-        description: Category of the endpoint to to subscribe to
+        description: Category of the endpoint to subscribe to
         required: true
         schema:
           type: string
@@ -266,7 +266,7 @@ paths:
       parameters:
       - in: path
         name: category
-        description: Category of the endpoint to to subscribe to
+        description: Category of the endpoint to subscribe to
         required: true
         schema:
           type: string
@@ -322,11 +322,11 @@ paths:
       description: 'Returns system notifications. A notification is a temporary or
         permanent event that reflects the current system state. This could be an error
         state, an alert or a simple message. If the request parameter is empty, all
-        currently active notifications will be returned. Every response contains to_time
+        currently active notifications will be returned. Every response contains `to_time`
         time point. Up to this time point notifications are fetched. An event gets
-        into the response, if the end_time is not set or greater or equal to the to_time.
-        It is recommended to use this point for the next request to not miss any notification
-        and to not request the same notifications multiple times.
+        into the response, if the `end_time` is not set or greater or equal to the
+        `to_time`. It is recommended to use this point for the next request to not
+        miss any notification and to not request the same notifications multiple times.
 
         '
       parameters:
@@ -404,10 +404,10 @@ paths:
       summary: Request control
       description: 'Requests control of the Fotokite system. If no other client (Fotokite
         Live, Fotokite API, Plugin) is controlling, control is granted. If another
-        client is controlling, the request is added to the waiting list (requesting_clients)
-        in `handoff/control/status`. A request remains valid for 1 minute; clients
-        should periodically re-request control. The result of the request must be
-        monitored using the `/handoff/control/status` endpoint.
+        client is controlling, the request is added to the waiting list (`requesting_clients`)
+        in `handoff/state`. A request remains valid for 1 minute; clients should periodically
+        re-request control. The result of the request must be monitored using the
+        `handoff/state` endpoint.
 
         '
       requestBody:
@@ -427,9 +427,9 @@ paths:
         202:
           description: 'Request was queued. This means that there is another entity
             controlling the system right now. The requestor should subscribe to the
-            `handoff/control/status` endpoint or poll it to see the result of the
-            request. It is also important to note that the request will be cleared
-            after 1 minute if not taken.
+            `handoff/state` endpoint or poll it to see the result of the request.
+            It is also important to note that the request will be cleared after 1
+            minute if not taken.
 
             '
         400:
@@ -500,7 +500,7 @@ paths:
       description: Returns system information.
       responses:
         200:
-          description: ''
+          description: Success execution
           content:
             application/json:
               schema:
@@ -523,6 +523,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemState'
+  /v1/system/control/open_rtb_lids:
+    post:
+      tags:
+      - System
+      security:
+      - TokenAuth:
+        - control
+      summary: Open Rooftop Box lids
+      description: 'Opens the Rooftop Box (RTB) lids. It is not necessary to call
+        this endpoint before takeoff, as the system will automatically open the lids
+        when needed. This endpoint is intended for maintenance purposes.
+
+        '
+      responses:
+        202:
+          $ref: '#/components/responses/CommandSuccess'
+        400:
+          $ref: '#/components/responses/WrongSystemSetup'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+        503:
+          $ref: '#/components/responses/ServiceUnavailable'
+  /v1/system/control/close_rtb_lids:
+    post:
+      tags:
+      - System
+      security:
+      - TokenAuth:
+        - control
+      summary: Close Rooftop Box lids
+      description: 'Closes the Rooftop Box (RTB) lids. It is not necessary to call
+        this endpoint after landing, as the system will automatically close the lids
+        when needed. This endpoint is intended for maintenance purposes.
+
+        '
+      responses:
+        202:
+          $ref: '#/components/responses/CommandSuccess'
+        400:
+          $ref: '#/components/responses/WrongSystemSetup'
+        403:
+          $ref: '#/components/responses/ControlCommandBlocked'
+        409:
+          $ref: '#/components/responses/NotAllowedInCurrentState'
+        503:
+          $ref: '#/components/responses/ServiceUnavailable'
   /v1/flight/info:
     get:
       tags:
@@ -770,10 +818,10 @@ paths:
         - control
       summary: Rotate with speed
       description: 'Rotates the camera at a given speed over a duration. To stop rotation
-        immediately, set speed to 0. The Fotokite Sigma is not designed for constant
+        immediately, set speed to 0. **The Fotokite Sigma is not designed for constant
         unidirectional rotation, as this may twist and damage the tether cable. We
         recommend counteracting rotations (e.g., perform 10 rotations in one direction,
-        then 10 in the opposite).
+        then 10 in the opposite).**
 
         '
       requestBody:
@@ -1364,6 +1412,15 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+    WrongSystemSetup:
+      description: 'The system is not set up to work as Rooftop Box, so the operation
+        cannot be performed.
+
+        '
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
     HealthResponse:
       type: object
@@ -1381,7 +1438,7 @@ components:
           type: string
           example: 1.0.1
           x-oapi-codegen-extra-tags:
-            fk-default: 1.0.0
+            fk-default: 1.1.2
     Error:
       type: object
       description: A generic error object.
@@ -1407,12 +1464,12 @@ components:
       - Offline
     Scopes:
       type: string
-      description: Available OAuth2 scopes. > - `read` - Grants access to retrieve
-        system data and information. - `control` - Allows sending commands to control
-        the system. - `can_override` - Allows to make `handoff/control/override` call
-        to override current controlling client. - `experimental` - Enables access
-        to experimental API features. - `internal` - Fotokite-internal functions.
-        Not for third-party use.
+      description: "Available OAuth2 scopes:\n  * `read` - Grants access to retrieve\
+        \ system data and information.\n  * `control` - Allows sending commands to\
+        \ control the system.\n  * `can_override` - Allows to make `handoff/control/override`\
+        \ call to override current controlling client.\n  * `experimental` - Enables\
+        \ access to experimental API features.\n  * `internal` - Fotokite-internal\
+        \ functions. Not for third-party use.\n"
     TokenRequest:
       type: object
       description: Request to obtain a session token. Compatible with OAuth2 `client_credentials`
@@ -1519,28 +1576,65 @@ components:
 
             '
           example: ABCD-WXYZ-1234-5678-PQRS
-    PluginUpdatableFields:
+    PluginSelfUpdatableFields:
       type: object
-      description: Updatable fields of a plugin.
+      description: Updatable fields of the plugin to report self status.
       properties:
         plugin_id:
-          description: Unique ID
+          description: '**DEPRECATED: This field is still accepted for backward compatibility
+            but will be removed in the future.**
+
+            '
+          deprecated: true
           type: string
           example: pluginAB
         state:
-          description: 'Current operating state of the plugin. * `Disabled` - Operator
-            has not enabled this plugin yet. * `Enabled` - Operator has enabled the
-            plugin, but there is no active session * `Active` - There is at least
-            one session using the plugin key. * `Connected` - The plugin has reported
-            that it is operational on any session. * `Error` - The plugin has reported
-            an error on any session. The first three states are determined automatically
-            by the API service. The `Connected` and `Error` must be set explicitly
-            by the plugin code. Plugins that are not activated for the Fotokite system
-            in Fleet Manager will not be displayed.
-
-            '
+          description: "**DEPRECATED: Use `self_status` instead. This field is still\
+            \ accepted for backward compatibility but will be removed in the future.**\
+            \ Possible values:\n  * `Disabled` - Operator has not enabled this plugin\
+            \ yet.\n  * `Enabled` - Operator has enabled the plugin, but there is\
+            \ no active session\n  * `Active` - There is at least one session using\
+            \ the plugin key.\n  * `Connected` - The plugin has reported that it is\
+            \ operational on any session.\n  * `Error` - The plugin has reported an\
+            \ error on any session.\n"
+          deprecated: true
           type: string
           example: Disabled
+        self_status:
+          $ref: '#/components/schemas/PluginSelfStatus'
+        self_status_text:
+          $ref: '#/components/schemas/PluginStatusText'
+    PluginSupervisoryUpdatableFields:
+      type: object
+      description: 'Updatable fields of a plugin. Can be used by other internal plugins
+        to report status of a plugin. If you don''t want to change a plugin aspect
+        - just don''t include the corresponding field in the request.
+
+        '
+      properties:
+        is_enabled:
+          type: boolean
+          description: 'Request to enable or disable the plugin. This is used by Fotokite
+            Live.
+
+            '
+          example: true
+        state:
+          description: "**DEPRECATED: Use `supervisory_status` instead. This field\
+            \ is still accepted for backward compatibility but will be removed in\
+            \ the future.** Possible values:\n  * `Disabled` - Operator has not enabled\
+            \ this plugin yet.\n  * `Enabled` - Operator has enabled the plugin, but\
+            \ there is no active session\n  * `Active` - There is at least one session\
+            \ using the plugin key.\n  * `Connected` - The plugin has reported that\
+            \ it is operational on any session.\n  * `Error` - The plugin has reported\
+            \ an error on any session.\n"
+          deprecated: true
+          type: string
+          example: Disabled
+        supervisory_status:
+          $ref: '#/components/schemas/PluginSupervisoryStatus'
+        supervisory_status_text:
+          $ref: '#/components/schemas/PluginStatusText'
     ApiKey:
       type: object
       description: Hashed Fotokite API key used by this plugin
@@ -1554,24 +1648,34 @@ components:
             '
         valid_from:
           type: string
-    StateUpdate:
-      type: object
-      description: Status update from a plugin or other customer integration.
-      properties:
-        state:
-          type: string
-          description: 'Current operating state of the plugin. * `Active` - The plugin
-            has not yet connected to any back-end serivces. * `Connected` - The plugin
-            has is connected to any external services and is fully operational. *
-            `Error` - The plugin has encountered an error.
+    PluginSelfStatus:
+      type: string
+      description: "Status reported by the plugin code about itself.\n  * `None` or\
+        \ `<empty string>` - no additional information about the plugin status is\
+        \ available. This is the default status.\n  * `Connected` - the plugin is\
+        \ operational and connected to all required backend services.\n  * `Warning`\
+        \ - a situation that requires operator attention but is not critical occurred.\n\
+        \  * `Error` - an error occurred and must be addressed by the operator.\n"
+      example: Connected
+    PluginSupervisoryStatus:
+      type: string
+      description: "Status reported by an internal plugin about another plugin.\n\
+        \  * `None` or `<empty string>` - no additional information about the plugin\
+        \ status is available. This is the default status.\n  * `Downloading` - plugin\
+        \ loader is downloading the plugin (if applicable).\n  * `Warning` - a situation\
+        \ that requires operator attention but is not critical occurred.\n  * `Error`\
+        \ - an error occurred and must be addressed by the operator.\n"
+      example: Downloading
+    PluginStatusText:
+      type: string
+      description: 'Free-form status text reported by the plugin itself or by internal
+        plugins. This is shown to the operator in the UI together with the state.
+        There is no hard limit on the content of this field, but it is recommended
+        to keep it concise and operator-friendly. Recommended max length is 160 characters.
+        To reset the status text, send an empty string.
 
-            '
-          example: Connected
-        error:
-          type: string
-          description: 'Free-form error message for logging or display to an operator.
-
-            '
+        '
+      example: Couldn't connect to back-end service. Please check your Internet connection.
     NotificationDictionaryItem:
       type: object
       description: Notification dictionary item object
@@ -1680,13 +1784,11 @@ components:
           additionalProperties: true
     NotificationSeverity:
       type: string
-      description: 'Notification severity enumeration. * `Info` - Something happened
-        that is not an issue, but may be of interest * `Warning` - Something bad happened,
-        but functionality is not affected * `Critical` - Something bad happened, some
-        functionality is broken * `Fatal` - Something bad happened, system is not
-        functional
-
-        '
+      description: "Notification severity enumeration.\n  * `Info` - Something happened\
+        \ that is not an issue, but may be of interest\n  * `Warning` - Something\
+        \ bad happened, but functionality is not affected\n  * `Critical` - Something\
+        \ bad happened, some functionality is broken\n  * `Fatal` - Something bad\
+        \ happened, system is not functional\n"
       enum:
       - Info
       - Warning
@@ -1848,50 +1950,24 @@ components:
         operator_name: Mr. Handoff
     OperatorRegulatoryMode:
       type: string
-      description: 'DroneID regulation variant that the UI provided to the operator
-        complies with.
-
-
-        DroneID broadcasts such as those required for FAA RemoteID contain information
-        about the UAS operator. This endpoint can be used to provide such information.
-        An update must be provided regularly according to the applicable regulation
-        to prevent entering a DroneID error state (this may require sending handoff
-        requests more frequently than it is required normally).
-
-
-        By setting this value, you declare compliance with the relevant regulation.
-
-
-        For the US:
-
-        *  An operator location of sufficient accuracy is required. A GPS receiver
-        with SBAS augmentation is sufficient.
-
-        * Any DroneID error reported by the `/system/state` endpoint must cause an
-        audiovisual indicator to signal a Remote ID failure to the operator.
-
-
-        Please refer to FAA 14 CFR Part 89, ASTM F3411 and ASTM F3586 for details.
-
-
-        **Possible values:**
-
-
-        * `US_REMOTE_ID_STANDARD`
-
-        * `unset`
-
-
-        If unset, this operator is not considered as a UAS operator, and a RemoteID
-        error might occur if regulation requires an operator but no other operator
-        is present.
-
-
-        If no location information is provided, it is assumed that the operator is
-        in direct vincinity of the Ground Station and the Ground Station location
-        is used as the operator location.
-
-        '
+      description: "DroneID regulation variant that the UI provided to the operator\
+        \ complies with. DroneID broadcasts such as those required for FAA RemoteID\
+        \ contain information about the UAS operator. This endpoint can be used to\
+        \ provide such information. An update must be provided regularly according\
+        \ to the applicable regulation to prevent entering a DroneID error state (this\
+        \ may require sending handoff requests more frequently than it is required\
+        \ normally). By setting this value, you declare compliance with the relevant\
+        \ regulation. For the US:\n  * An operator location of sufficient accuracy\
+        \ is required. A GPS\n    receiver with SBAS augmentation is sufficient.\n\
+        \  * Any DroneID error reported by the `/system/state` endpoint must cause\n\
+        \    an audiovisual indicator to signal a Remote ID failure to the operator.\n\
+        \nPlease refer to FAA 14 CFR Part 89, ASTM F3411 and ASTM F3586 for details.\
+        \ **Possible values:**\n  * `US_REMOTE_ID_STANDARD`\n  * `unset`\nIf unset,\
+        \ this operator is not considered as a UAS operator, and a RemoteID error\
+        \ might occur if regulation requires an operator but no other operator is\
+        \ present. If no location information is provided, it is assumed that the\
+        \ operator is in direct vicinity of the Ground Station and the Ground Station\
+        \ location is used as the operator location.\n"
       example: US_REMOTE_ID_STANDARD
     SystemInfo:
       type: object
@@ -1925,18 +2001,18 @@ components:
           type: string
           example: R001ND
         installation:
-          description: Type of installation (RTB, Transport Case, Tray Mount, DevKit)
+          description: "Type of installation. Possible values:\n  * `Transport Case`\n\
+            \  * `Tray Mount`\n  * `Rooftop Box`\n  * `Dev Kit`\n  * `Bare Ground\
+            \ Station`\n"
           type: string
-          example: RTB
+          example: Rooftop Box
         model:
           description: Model/generation of the Fotokite system
           type: string
           example: Sigma
         propeller_model:
-          description: 'Model of the propellers used in the system. Possible values:
-            * `Propeller 1st Generation` * `Propeller 2nd Generation`
-
-            '
+          description: "Model of the propellers used in the system. Possible values:\n\
+            \  * `Propeller 1st Generation`\n  * `Propeller 2nd Generation`\n"
           type: string
           example: Propeller 1st Generation
         timezone:
@@ -2002,8 +2078,6 @@ components:
         gs_input_voltage:
           description: Ground Station input voltage (volts)
           type: number
-        rtb_lids_state:
-          $ref: '#/components/schemas/RTBLidsState'
         gs_gps_has_fix:
           description: Whether the data reported by the Ground Station GPS is useable
           type: boolean
@@ -2028,11 +2102,26 @@ components:
           minimum: 0
         drone_id:
           $ref: '#/components/schemas/DroneIdStatus'
+        rtb_lids_state:
+          $ref: '#/components/schemas/RTBLidsState'
+        rtb_external_safety_land_button_state:
+          description: State of the external safety land button connected to the Rooftop
+            Box
+          type: string
+          enum:
+          - Pressed
+          - NotPressed
+        rtb_parking_brake_state:
+          description: State of the parking brake on the Rooftop Box. When the parking
+            brake is engaged, the system will not take off.
+          type: string
+          enum:
+          - Engaged
+          - Disengaged
       example:
         kite_battery_level: 100
         gs_battery_level: 98
         gs_input_voltage: 112
-        rtb_lids_state: Opened
         gs_gps_has_fix: true
         gs_gps_lat: 47.3883959
         gs_gps_lon: 8.5229581
@@ -2042,6 +2131,9 @@ components:
           status:
             status: OK
           error_codes: []
+        rtb_lids_state: Opened
+        rtb_external_safety_land_button_state: NotPressed
+        rtb_parking_brake_state: Disengaged
     RTBLidsState:
       type: string
       description: 'Rooftop Box (RTB) lids state
@@ -2083,13 +2175,10 @@ components:
           description: List of error codes that are currently applicable.
     RegulatoryMode:
       type: string
-      description: 'DroneID regulation variant that the system needs to comply with.
-
-        The possible values are:
-
-        * `US_REMOTE_ID_STANDARD` * `UNKNOWN`
-
-        '
+      description: "DroneID regulation variant that the system needs to comply with.\
+        \ The possible values are:\n  * `DISABLED` - DroneID is disabled, no compliance\
+        \ provided.\n  * `US_REMOTE_ID_STANDARD` - The system is compliant with the\
+        \ US Remote ID Standard.\n  * `UNKNOWN` - Regulatory mode is unknown.\n"
       example: US_REMOTE_ID_STANDARD
     CurrentDroneIDErrorCode:
       description: "Code that describes what is wrong with DroneID. Values prefixed\
@@ -2097,35 +2186,31 @@ components:
         \ DroneID to be non-compliant, while values prefixed with `WARNING_` indicate\
         \ potential issues (data stale, no gps fix).\nThe non-compliant state should\
         \ be indicated in the monitoring application.\nThe possible values are:\n\
-        * `ERROR_UNKNOWN_REGULATORY_MODE` - Unknown regulatory mode (needs\n  config\
-        \ change or sw update to fix).\n* `ERROR_HARDWARE_VARIANT_UNSUITABLE` - Hardware\
-        \ variant and regulatory\n  mode configured are incompatible (needs hardware\
-        \ changes to\n  fix).\n* `ERROR_TX_FAILED` - Tx reports failure, maybe HW/SW\
-        \ defect (restart\n  might fix it).\n* `ERROR_TX_WRONG_WIFI_REGION` - Transmission\
-        \ is happening, but with the\n  wrong region settings (fix by changing wifi\
-        \ region).\n* `ERROR_TX_WRONG_TRANSMISSION_POWER` - Transmission is happening,\
-        \ but\n  with higher or lower power than allowed (fix by changing wifi\n \
-        \ settings/region).\n* `ERROR_TX_NOT_TRANSMITTING` - Tx(s) that should be\
-        \ transmitting, are\n  not (probably hardware malfunction if this persists).\n\
-        * `ERROR_TX_TRANSMITTING` - At least one Tx is transmitting even though\n\
-        \  it should not be (bug in tx software, try restarting).\n* `ERROR_TX_STALE`\
-        \ - Tx is transmitting old data (might be\n  intermittent).\n* `ERROR_FW_INCOMPATIBLE`\
-        \ - The installed firmware doesn't support the\n  DroneID preflight check.\n\
-        * `ERROR_NO_OPERATOR` - No operator connected that is compatible with\n  DroneID.\n\
-        * `ERROR_DATA_STALE` - We recently didn't receive required data (from\n  the\
-        \ kite, or, in the future, tablet). In this case we pretend that the\n  data\
-        \ is recent but put this alert here.\n* `WARNING_DATA_INACCURATE` - No GPS\
-        \ fix, this is not a failure\n  condition.\n"
+        \  * `ERROR_UNKNOWN_REGULATORY_MODE` - Unknown regulatory mode (needs\n  \
+        \  config change or software update to fix).\n  * `ERROR_HARDWARE_VARIANT_UNSUITABLE`\
+        \ - Hardware variant and regulatory\n    mode configured are incompatible\
+        \ (needs hardware changes to fix).\n  * `ERROR_TX_FAILED` - Tx reports failure,\
+        \ maybe HW/SW defect (restart might fix it).\n  * `ERROR_TX_WRONG_WIFI_REGION`\
+        \ - Transmission is happening, but with the\n    wrong region settings (fix\
+        \ by changing wifi region).\n  * `ERROR_TX_WRONG_TRANSMISSION_POWER` - Transmission\
+        \ is happening, but\n    with higher or lower power than allowed (fix by changing\
+        \ wifi settings/region).\n  * `ERROR_TX_NOT_TRANSMITTING` - Tx(s) that should\
+        \ be transmitting, are\n    not (probably hardware malfunction if this persists).\n\
+        \  * `ERROR_TX_TRANSMITTING` - At least one Tx is transmitting even though\n\
+        \    it should not be (bug in tx software, try restarting).\n  * `ERROR_TX_STALE`\
+        \ - Tx is transmitting old data (might be intermittent).\n  * `ERROR_FW_INCOMPATIBLE`\
+        \ - The installed firmware doesn't support the\n    DroneID preflight check.\n\
+        \  * `ERROR_NO_OPERATOR` - No operator connected that is compatible with DroneID.\n\
+        \  * `ERROR_DATA_STALE` - We recently didn't receive required data (from\n\
+        \    the kite, or, in the future, tablet). In this case we pretend that the\n\
+        \    data is recent but put this alert here.\n  * `WARNING_DATA_INACCURATE`\
+        \ - No GPS fix, this is not a failure condition.\n"
       type: string
     DroneIdCheckStatus:
       type: string
-      description: 'Status of the DroneID check.
-
-        * `CHECKING` - The check is currently running. * `OK` - The check completed
-        successfully. * `FAILED` - The check failed. * `EMERGENCY` - The system is
-        in an emergency state.
-
-        '
+      description: "Status of the DroneID check.\n  * `CHECKING` - The check is currently\
+        \ running.\n  * `OK` - The check completed successfully.\n  * `FAILED` - The\
+        \ check failed.\n  * `EMERGENCY` - The system is in an emergency state.\n"
       example: CHECKING
     FlightInfo:
       type: object
@@ -2136,8 +2221,8 @@ components:
       properties:
         altitude_takeoff:
           description: 'Kite takeoff altitude (meters). The takeoff altitude is the
-            altitude to which the Kite rises after takeoff. Important: The Kite cannot
-            fly lower than the takeoff altitude.
+            altitude to which the Kite rises after takeoff. **Important: The Kite
+            cannot fly lower than the takeoff altitude.**
 
             '
           type: number
@@ -2156,15 +2241,24 @@ components:
 
             '
           type: number
+        total_kite_flight_hours:
+          description: 'Total Kite flight time (hours). This value can be used for
+            maintenance purposes. Note: initial value can be greater than 0 due to
+            pre-delivery testing.
+
+            '
+          type: number
+          minimum: 0
       example:
         altitude_takeoff: 1.0
         altitude_hard_max: 45.0
         altitude_soft_max: 10.0
+        total_kite_flight_hours: 15.3
     FlightState:
       type: object
       description: 'Represents frequently changing flight information. A property
         is not presented if it could not be gathered (for example due to a magnetometer
-        or a GPS issue). Note: there is always a margin of error between the altitude_target
+        or a GPS issue). Note: there is always a margin of error between the `altitude_target`
         and the altitude the Kite will take. And this error is not a constant.
 
         '
@@ -2261,8 +2355,8 @@ components:
         altitude:
           description: 'Sets target Kite altitude above the Ground Station (meters).
             Must not be lower than Kite takeoff altitude + 1 meter. But lower than
-            both altitude_hard_limit and altitude_soft_limit. Note: there is always
-            a margin of error between the altitude_target and the altitude the Kite
+            both `altitude_hard_limit` and `altitude_soft_limit`. Note: there is always
+            a margin of error between the `altitude_target` and the altitude the Kite
             will take. And this error is not a constant.
 
             '
@@ -2285,19 +2379,13 @@ components:
       description: Camera information
       properties:
         model:
-          description: 'Camera model. Allows to identify the camera type. Possible
-            values:
-
-            * `Camera 1st Generation`. It has one color and one thermal module.
-
-            * `Camera 2nd Generation`. It has two color and one thermal module. One
-            color video stream has 32x zoom capabilities. Thermal module has resolution
-            of 320x240.
-
-            * `Camera 2nd Generation IR Plus`. It has two color and one thermal module.
-            Thermal module is upgraded to a resolution of 640x512.
-
-            '
+          description: "Camera model. Allows to identify the camera type. Possible\
+            \ values:\n  * `Camera 1st Generation`. It has one color and one thermal\
+            \ module.\n  * `Camera 2nd Generation`. It has two color and one thermal\
+            \ module.\n    One color video stream has 32x zoom capabilities. Thermal\
+            \ module has resolution of 320x240.\n  * `Camera 2nd Generation IR Plus`.\
+            \ It has two color and one thermal module.\n    Thermal module is upgraded\
+            \ to a resolution of 640x512.\n"
           type: string
         pan_speed_min:
           description: Minimum absolute pan speed of the camera (degrees/sec)
@@ -2349,45 +2437,41 @@ components:
       - online_state
       properties:
         online_state:
-          description: 'If Online then the camera is powered on and can be used. This
-            also means that the data about camera is up-to-date. If Offline then the
-            camera is powered off or not connected to the system. In this case the
-            data about the last online camera is provided. And this information may
-            be inaccurate due to payload swap.
+          description: 'If `Online` then the camera is powered on and can be used.
+            This also means that the data about camera is up-to-date. If `Offline`
+            then the camera is powered off or not connected to the system. In this
+            case the data about the last online camera is provided. And this information
+            may be inaccurate due to payload swap.
 
             '
           $ref: '#/components/schemas/OnlineState'
           example: Online
         pan_ned:
-          description: 'Camera pan angle in degrees in NED coordinates. 0 - The camera
-            is looking North. +90 - The camera is looking East. +180 - The camera
-            is looking South. -90 - The camera is looking West.
-
-            '
+          description: "Camera pan angle in degrees in NED coordinates.\n  * 0 - The\
+            \ camera is looking North.\n  * +90 - The camera is looking East.\n  *\
+            \ +180 - The camera is looking South.\n  * -90 - The camera is looking\
+            \ West.\n"
           type: number
           minimum: -180.0
           exclusiveMinimum: true
           maximum: 180.0
           example: 10.0
         tilt_ned:
-          description: 'Camera tilt angle in degrees in NED coordinates. 0 - The camera
-            is level, looking straight ahead. -90 - The camera is looking straight
-            up. +90 - The camera is looking straight down towards gravity vector.
-
-            '
+          description: "Camera tilt angle in degrees in NED coordinates.\n  * 0 -\
+            \ The camera is level, looking straight ahead.\n  * -90 - The camera is\
+            \ looking straight up.\n  * +90 - The camera is looking straight down\
+            \ towards gravity vector.\n"
           type: number
           minimum: -180.0
           exclusiveMinimum: true
           maximum: 180.0
           example: 32.0
         roll_ned:
-          description: 'Camera roll angle in degrees in NED coordinates. 0 - The camera
-            is level, with the top facing upward. +90 - The top of the camera is rotated
-            to the right. +180 - The top of the camera is facing downward (the same
-            direction as gravity vector). -90 - The top of the camera is rotated to
-            the left.
-
-            '
+          description: "Camera roll angle in degrees in NED coordinates.\n  * 0 -\
+            \ The camera is level, with the top facing upward.\n  * +90 - The top\
+            \ of the camera is rotated to the right.\n  * +180 - The top of the camera\
+            \ is facing downward (the same direction as gravity vector).\n  * -90\
+            \ - The top of the camera is rotated to the left.\n"
           type: number
           minimum: -180.0
           exclusiveMinimum: true
@@ -2437,12 +2521,11 @@ components:
           exclusiveMaximum: true
           example: 90
         tilt_ned:
-          description: 'Tilt (in NED coordinates) to rotate to in degrees. 0 - means
-            that the camera is looking straight forward. -90 - means that the camera
-            is looking straight up. +90 - means that the camera is looking straight
-            down. +180 - means that the camera is looking backward and upside down.
-
-            '
+          description: "Tilt (in NED coordinates) to rotate to in degrees.\n  * 0\
+            \ - means that the camera is looking straight forward.\n  * -90 - means\
+            \ that the camera is looking straight up.\n  * +90 - means that the camera\
+            \ is looking straight down.\n  * +180 - means that the camera is looking\
+            \ backward and upside down.\n"
           type: number
           minimum: -180.0
           exclusiveMinimum: true
@@ -2538,9 +2621,7 @@ components:
           type: number
           example: 32.0
         codec:
-          description: 'Video codec. Possible values: - `H.264`
-
-            '
+          description: "Video codec. Possible values:\n  * `H.264`\n"
           type: string
           example: H.264
         rtsp_url:
@@ -2560,10 +2641,8 @@ components:
           example: true
     VideoStreamType:
       type: string
-      description: 'Video stream type. Possible values: * `Color` - regular color
-        video stream. * `Thermal` - thermal video stream.
-
-        '
+      description: "Video stream type. Possible values:\n  * `Color` - regular color\
+        \ video stream.\n  * `Thermal` - thermal video stream.\n"
     VideoStreamState:
       type: object
       description: Frequently changing information about video stream
@@ -2597,35 +2676,31 @@ components:
           type: number
           example: 63.6
         pan_ned:
-          description: 'Camera pan angle in degrees in NED coordinates. 0 - The camera
-            is looking North. +90 - The camera is looking East. +180 - The camera
-            is looking South. -90 - The camera is looking West.
-
-            '
+          description: "Camera pan angle in degrees in NED coordinates.\n  * 0 - The\
+            \ camera is looking North.\n  * +90 - The camera is looking East.\n  *\
+            \ +180 - The camera is looking South.\n  * -90 - The camera is looking\
+            \ West.\n"
           type: number
           minimum: -180.0
           exclusiveMinimum: true
           maximum: 180.0
           example: 10.0
         tilt_ned:
-          description: 'Camera tilt angle in degrees in NED coordinates. 0 - The camera
-            is level, looking straight ahead. -90 - The camera is looking straight
-            up. +90 - The camera is looking straight down towards gravity vector.
-
-            '
+          description: "Camera tilt angle in degrees in NED coordinates.\n  * 0 -\
+            \ The camera is level, looking straight ahead.\n  * -90 - The camera is\
+            \ looking straight up.\n  * +90 - The camera is looking straight down\
+            \ towards gravity vector.\n"
           type: number
           minimum: -180.0
           exclusiveMinimum: true
           maximum: 180.0
           example: 32.0
         roll_ned:
-          description: 'Camera roll angle in degrees in NED coordinates. 0 - The camera
-            is level, with the top facing upward. +90 - The top of the camera is rotated
-            to the right. +180 - The top of the camera is facing downward (the same
-            direction as gravity vector). -90 - The top of the camera is rotated to
-            the left.
-
-            '
+          description: "Camera roll angle in degrees in NED coordinates.\n  * 0 -\
+            \ The camera is level, with the top facing upward.\n  * +90 - The top\
+            \ of the camera is rotated to the right.\n  * +180 - The top of the camera\
+            \ is facing downward (the same direction as gravity vector).\n  * -90\
+            \ - The top of the camera is rotated to the left.\n"
           type: number
           minimum: -180.0
           exclusiveMinimum: true
@@ -2645,11 +2720,9 @@ components:
           example: Ironbow
     ThermalColorPalette:
       type: string
-      description: 'Thermal color palette. Possible values: - `WhiteHot` - `BlackHot`
-        - `Rainbow` - `RainbowHighContrast` - `Ironbow` - `Lava` - `Arctic` - `Glowbow`
-        - `GradedFire` - `Hottest`
-
-        '
+      description: "Thermal color palette. Possible values:\n  * `WhiteHot`\n  * `BlackHot`\n\
+        \  * `Rainbow`\n  * `RainbowHighContrast`\n  * `Ironbow`\n  * `Lava`\n  *\
+        \ `Arctic`\n  * `Glowbow`\n  * `GradedFire`\n  * `Hottest`\n"
     ControlZoomRequest:
       type: object
       description: Request to set zoom level.
